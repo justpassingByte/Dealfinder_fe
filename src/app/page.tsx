@@ -4,16 +4,18 @@ import { useState, FormEvent, useCallback } from "react";
 import { Search, Zap, Check, ExternalLink, TrendingDown, Star, ShoppingCart, Info, TrendingUp, Download, Chrome, LayoutGrid, Filter } from "lucide-react";
 import Footer from "./components/Footer";
 
-interface Listing {
+export interface Listing {
+  id: string;
   title: string;
   price: number;
+  url: string;
+  image?: string;
+  shop: string;
+  marketplace: string;
   rating: number;
   sold: number;
-  shop: string;
-  url: string;
-  image: string;
-  marketplace: string;
   score?: number;
+  relevanceScore?: number;
 }
 
 interface ComparisonResult {
@@ -54,11 +56,18 @@ export default function HomePage() {
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [dealDetection, setDealDetection] = useState<DealDetectionResult | null>(null);
 
-  // Filter State
-  const [showFilters, setShowFilters] = useState(false);
-  const [minPrice, setMinPrice] = useState<number | "">("");
-  const [maxPrice, setMaxPrice] = useState<number | "">("");
-  const [minRating, setMinRating] = useState(0);
+  // Sort State
+  const [sortBy, setSortBy] = useState<"price" | "sold">("price");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const toggleSort = (col: "price" | "sold") => {
+    if (sortBy === col) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(col);
+      setSortOrder(col === "price" ? "asc" : "desc"); // Giá mặc định tăng dần (rẻ nhất), Đã bán mặc định giảm dần (nhiều nhất)
+    }
+  };
 
   const fetchResults = useCallback(async (q: string) => {
     try {
@@ -316,52 +325,8 @@ export default function HomePage() {
                 <h2 className="text-2xl font-black text-[#0f172a] flex items-center gap-2">
                   <LayoutGrid className="w-5 h-5 text-teal-600" /> Danh Sách Sản Phẩm Shopee
                 </h2>
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-1.5 px-3 py-2 rounded-full border ${showFilters ? "bg-[#0f172a] text-white border-[#0f172a]" : "bg-white text-slate-400 border-slate-200 hover:text-teal-600"}`}
-                >
-                  <Filter className="w-3.5 h-3.5" /> {showFilters ? "Đóng bộ lọc" : "Lọc kết quả"}
-                </button>
               </div>
 
-              {showFilters && (
-                <div className="mb-6 p-6 bg-white border border-slate-200 rounded-xl shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-2 duration-300">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Giá từ (VND)</label>
-                    <input
-                      type="number"
-                      placeholder="VD: 100.000"
-                      className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
-                      value={minPrice}
-                      onChange={(e) => setMinPrice(e.target.value ? parseInt(e.target.value) : "")}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Giá đến (VND)</label>
-                    <input
-                      type="number"
-                      placeholder="VD: 500.000"
-                      className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
-                      value={maxPrice}
-                      onChange={(e) => setMaxPrice(e.target.value ? parseInt(e.target.value) : "")}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Đánh giá tối thiểu</label>
-                    <div className="flex items-center gap-3 mt-1">
-                      {[0, 3, 4, 4.5].map((val) => (
-                        <button
-                          key={val}
-                          onClick={() => setMinRating(val)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${minRating === val ? "bg-teal-500 text-white shadow-md shadow-teal-100" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
-                        >
-                          {val === 0 ? "Tất cả" : `${val}+`}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
               <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col md:flex-row md:items-center gap-6 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
                 {/* Image square */}
                 <div className="w-20 h-20 bg-[#e2e8f0] rounded flex items-center justify-center overflow-hidden shrink-0 border border-slate-100">
@@ -396,6 +361,19 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Purchase Button for the main product */}
+                <div className="text-left md:text-right mt-4 md:mt-0 shrink-0">
+                  <a
+                    href={redirectUrl(result.bestDeal.url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex w-full md:w-auto items-center justify-center gap-2 bg-[#0f172a] hover:bg-teal-600 active:scale-95 text-white py-3 px-8 rounded-xl font-black text-sm transition-all shadow-md group"
+                  >
+                    <ShoppingCart className="w-4 h-4 transition-transform group-hover:-rotate-12" />
+                    XEM TRÊN SHOPEE
+                  </a>
+                </div>
               </div>
             </div>
 
@@ -411,13 +389,25 @@ export default function HomePage() {
                   <Zap className="w-2.5 h-2.5 fill-white" /> LỰA CHỌN TỐT NHẤT
                 </div>
 
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+                <div className="flex flex-col md:flex-row justify-between items-start gap-10">
 
-                  <div className="flex-1 w-full max-w-sm">
-                    <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2 text-sm">NHÀ BÁN HÀNG</div>
-                    <h4 className="text-2xl font-black text-slate-900 mb-8">{result.bestDeal.shop}</h4>
+                  <div className="w-full md:w-48 h-48 bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 shrink-0 shadow-sm flex items-center justify-center">
+                    {result.bestDeal.image ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={result.bestDeal.image} className="w-full h-full object-contain hover:scale-110 transition-transform duration-500" alt="best-deal" />
+                    ) : (
+                      <Zap className="w-12 h-12 text-slate-200" />
+                    )}
+                  </div>
 
-                    <div className="space-y-4">
+                  <div className="flex-1 w-full">
+                    <h3 className="font-extrabold text-xl text-slate-900 mb-4 leading-snug line-clamp-2" title={result.bestDeal.title}>
+                      {result.bestDeal.title}
+                    </h3>
+                    <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2">NHÀ BÁN HÀNG</div>
+                    <h4 className="text-lg font-black text-slate-900 mb-6">{result.bestDeal.shop}</h4>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-4">
                       <div className="flex justify-between items-center text-sm font-semibold">
                         <span className="text-slate-500">Đánh giá</span>
                         <span className="font-black flex items-center gap-1 text-slate-900">{result.bestDeal.rating.toFixed(1)} <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /></span>
@@ -425,15 +415,6 @@ export default function HomePage() {
                       <div className="flex justify-between items-center text-sm font-semibold">
                         <span className="text-slate-500">Đã bán</span>
                         <span className="font-black text-slate-900">{result.bestDeal.sold.toLocaleString()} sản phẩm</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm font-semibold pt-2">
-                        <span className="text-slate-500">Độ tin cậy</span>
-                        <div className="flex items-center gap-3">
-                          <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-50">
-                            <div className="bg-gradient-to-r from-teal-400 to-teal-600 h-full shadow-[0_0_10px_rgba(20,184,166,0.3)]" style={{ width: `${((result.bestDeal.score || 0) * 100)}%` }} />
-                          </div>
-                          <span className="font-black text-teal-600">{(result.bestDeal.score! * 100).toFixed(0)}%</span>
-                        </div>
                       </div>
                     </div>
 
@@ -472,59 +453,87 @@ export default function HomePage() {
 
             {/* 3. Other Sellers Table Block */}
             <div className="w-full mt-4">
-              <h2 className="text-2xl font-black text-[#0f172a] mb-4 flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5 text-teal-600" /> Các Nhà Bán Khác
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-black text-[#0f172a] flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5 text-teal-600" /> Các Nhà Bán Khác
+                </h2>
+              </div>
+
               <div className="bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs whitespace-nowrap">
-                    <thead className="bg-slate-50/50 border-b border-slate-100">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50/50 border-b border-slate-100 whitespace-nowrap">
                       <tr className="text-slate-400 text-[10px] font-black tracking-[0.2em] uppercase">
-                        <th className="px-6 py-5 w-1/3">CỬA HÀNG</th>
-                        <th className="px-6 py-5">GIÁ</th>
+                        <th className="px-6 py-5">SẢN PHẨM</th>
+                        <th className="px-6 py-5">CỬA HÀNG</th>
+                        <th className="px-6 py-5 cursor-pointer hover:text-teal-600 transition-colors group select-none" onClick={() => toggleSort("price")}>
+                          <div className="flex items-center gap-1.5">
+                            GIÁ
+                            <span className={`inline-flex items-center justify-center w-5 h-5 rounded-md text-[11px] transition-colors ${sortBy === "price" ? "bg-teal-100 text-teal-700 font-black" : "bg-transparent text-slate-300 group-hover:bg-slate-50 group-hover:text-slate-500"}`}>
+                              {sortBy === "price" ? (sortOrder === "asc" ? "↑" : "↓") : "↑"}
+                            </span>
+                          </div>
+                        </th>
                         <th className="px-6 py-5">ĐÁNH GIÁ</th>
-                        <th className="px-6 py-5">ĐÃ BÁN</th>
-                        <th className="px-6 py-5">ĐỘ TIN CẬY</th>
+                        <th className="px-6 py-5 cursor-pointer hover:text-teal-600 transition-colors group select-none" onClick={() => toggleSort("sold")}>
+                          <div className="flex items-center gap-1.5">
+                            ĐÃ BÁN
+                            <span className={`inline-flex items-center justify-center w-5 h-5 rounded-md text-[11px] transition-colors ${sortBy === "sold" ? "bg-teal-100 text-teal-700 font-black" : "bg-transparent text-slate-300 group-hover:bg-slate-50 group-hover:text-slate-500"}`}>
+                              {sortBy === "sold" ? (sortOrder === "asc" ? "↑" : "↓") : "↓"}
+                            </span>
+                          </div>
+                        </th>
                         <th className="px-6 py-5 text-right">HÀNH ĐỘNG</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 text-slate-700">
                       {result.sellerList
-                        .filter(l => {
-                          const priceMatch = (minPrice === "" || l.price >= minPrice) && (maxPrice === "" || l.price <= maxPrice);
-                          const ratingMatch = l.rating >= minRating;
-                          return priceMatch && ratingMatch;
+                        .filter(l => l.url !== result.bestDeal.url)
+                        .slice() // copy array to avoid mutation
+                        .sort((a, b) => {
+                          const multiplier = sortOrder === "asc" ? 1 : -1;
+                          const valA = sortBy === "price" ? a.price : a.sold;
+                          const valB = sortBy === "price" ? b.price : b.sold;
+                          return (valA - valB) * multiplier;
                         })
                         .map((listing, i) => (
                           <tr key={i} className="hover:bg-teal-50/30 transition-colors group">
-                            <td className="px-6 py-5">
+                            <td className="px-6 py-5 min-w-[300px]">
                               <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-[#f1f5f9] border-2 border-white shadow-sm shrink-0 flex items-center justify-center font-bold text-slate-400 group-hover:border-teal-200 transition-colors">
-                                  {listing.shop.charAt(0)}
+                                <div className="w-12 h-12 rounded bg-[#f1f5f9] border border-slate-100 shrink-0 flex items-center justify-center overflow-hidden">
+                                  {listing.image ? (
+                                    /* eslint-disable-next-line @next/next/no-img-element */
+                                    <img src={listing.image} className="w-full h-full object-cover" alt="thumb" />
+                                  ) : (
+                                    <Zap className="w-4 h-4 text-slate-300" />
+                                  )}
                                 </div>
-                                <div>
-                                  <div className="font-black text-slate-900 text-sm group-hover:text-teal-600 transition-colors">{listing.shop}</div>
-                                  <div className="text-[10px] text-slate-400 uppercase tracking-widest font-black mt-0.5">{listing.marketplace}</div>
+                                <div className="font-bold text-slate-900 text-sm line-clamp-2 leading-snug">
+                                  {listing.title}
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-5 font-black text-slate-900 text-base">
+                            <td className="px-6 py-5 min-w-[200px] whitespace-normal">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400">
+                                  {listing.shop.charAt(0)}
+                                </div>
+                                <div>
+                                  <div className="font-black text-slate-900 text-[11px] group-hover:text-teal-600 transition-colors">{listing.shop}</div>
+                                  <div className="text-[9px] text-slate-400 uppercase tracking-widest font-black">{listing.marketplace}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 font-black text-slate-900 text-base whitespace-nowrap">
                               {formatPrice(listing.price)}
                             </td>
-                            <td className="px-6 py-5 font-black">
+                            <td className="px-6 py-5 font-black whitespace-nowrap">
                               <div className="flex items-center gap-1">
                                 {listing.rating.toFixed(1)} <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                               </div>
                             </td>
-                            <td className="px-6 py-5 font-bold text-slate-500">
+                            <td className="px-6 py-5 font-bold text-slate-500 whitespace-nowrap">
                               {listing.sold.toLocaleString()}
-                            </td>
-                            <td className="px-6 py-5">
-                              <div className="flex items-center gap-2">
-                                <span className={`font-black text-[12px] px-2 py-0.5 rounded-full ${listing.score && listing.score > 0.6 ? "bg-teal-50 text-teal-600 border border-teal-100" : listing.score && listing.score > 0.4 ? "bg-amber-50 text-amber-600 border border-amber-100" : "bg-rose-50 text-rose-600 border border-rose-100"}`}>
-                                  {((listing.score || 0) * 100).toFixed(0)}%
-                                </span>
-                              </div>
                             </td>
                             <td className="px-6 py-5 text-right">
                               <a
