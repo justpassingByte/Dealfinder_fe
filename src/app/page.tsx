@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, FormEvent, useCallback } from "react";
-import { Search, Zap, Check, ExternalLink, TrendingDown, Star, ShoppingCart, Info, TrendingUp, Download, Chrome, LayoutGrid, Filter } from "lucide-react";
+import { useState, FormEvent, useCallback, useEffect } from "react";
+import { Search, Zap, Check, ExternalLink, TrendingDown, Star, ShoppingCart, Info, TrendingUp, Download, Chrome, LayoutGrid, Filter, Flame, Share2, Copy } from "lucide-react";
 import Footer from "./components/Footer";
 
 export interface Listing {
@@ -16,6 +16,12 @@ export interface Listing {
   sold: number;
   score?: number;
   relevanceScore?: number;
+  // Deal intelligence fields
+  listingId?: string;
+  isDeal?: boolean;
+  discountPercent?: number;
+  medianPrice?: number;
+  lowestPrice?: number;
 }
 
 interface ComparisonResult {
@@ -36,7 +42,25 @@ interface DealDetectionResult {
   alerts: DealAlert[];
 }
 
+interface PriceHistoryEntry {
+  price: number;
+  recordedAt: string;
+}
+
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+// Regex to detect marketplace URLs
+const MARKETPLACE_URL_REGEX = /^https?:\/\/(www\.)?(shopee|lazada)\./i;
+
+interface HotDeal {
+  listingId: string;
+  productName: string;
+  storage: string | null;
+  color: string | null;
+  price: number;
+  discountPercent: number;
+  imageUrl: string | null;
+}
 
 function formatPrice(price: number): string {
   return price.toLocaleString("vi-VN", {
@@ -44,6 +68,13 @@ function formatPrice(price: number): string {
     currency: "VND",
     maximumFractionDigits: 0,
   });
+}
+
+function formatSold(sold: number): string {
+  if (sold >= 1000) {
+    return (sold / 1000).toFixed(1).replace(/\.0$/, "").replace(".", ",") + "k+";
+  }
+  return sold.toString();
 }
 
 export default function HomePage() {
@@ -56,9 +87,14 @@ export default function HomePage() {
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [dealDetection, setDealDetection] = useState<DealDetectionResult | null>(null);
 
+  // Price History State
+  const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
+
   // Sort State
   const [sortBy, setSortBy] = useState<"price" | "sold">("price");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [hotDeals, setHotDeals] = useState<HotDeal[]>([]);
+  const [loadingHotDeals, setLoadingHotDeals] = useState(false);
 
   const toggleSort = (col: "price" | "sold") => {
     if (sortBy === col) {
@@ -69,11 +105,14 @@ export default function HomePage() {
     }
   };
 
+  const [catalogProduct, setCatalogProduct] = useState<any>(null);
+  const [dataSource, setDataSource] = useState<string>("");
+
   const fetchResults = useCallback(async (q: string) => {
     try {
-      setSearchStatus("Đang tìm kiếm sản phẩm tốt nhất trên Shopee...");
-      // 1. Search
-      const searchRes = await fetch(`${API}/api/search?q=${encodeURIComponent(q)}`);
+      setSearchStatus("Đang truy xuất từ danh mục sản phẩm...");
+      // 1. Search (using catalog-powered endpoint)
+      const searchRes = await fetch(`${API}/api/search/catalog?q=${encodeURIComponent(q)}`);
 
       if (searchRes.status === 202) {
         setTimeout(() => fetchResults(q), 2000);
@@ -90,6 +129,10 @@ export default function HomePage() {
 
       const searchData = await searchRes.json();
       const listings: Listing[] = searchData.listings || [];
+      
+      // Save catalog-specific metadata
+      setCatalogProduct(searchData.product);
+      setDataSource(searchData.source);
 
       if (listings.length === 0) {
         alert("Không tìm thấy kết quả nào cho sản phẩm này.");
@@ -147,34 +190,85 @@ export default function HomePage() {
     setHasSearched(false);
     setResult(null);
     setDealDetection(null);
+    setPriceHistory([]);
 
-    setSearchStatus("Đang phân tích URL sản phẩm...");
-    try {
-      const res = await fetch(`${API}/api/analyze-product`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: targetUrl.trim() }),
-      });
-      const data = await res.json();
+    const input = targetUrl.trim();
+    const isUrl = MARKETPLACE_URL_REGEX.test(input);
 
-      if (!res.ok) {
-        alert(data.error || "Phân tích sản phẩm thất bại.");
+    if (isUrl) {
+      // URL flow: analyze first, then search with extracted title
+      setSearchStatus("Đang phân tích URL sản phẩm...");
+      try {
+        const res = await fetch(`${API}/api/analyze-product`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: input }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || "Phân tích sản phẩm thất bại.");
+          setLoading(false);
+          setSearchStatus("");
+          return;
+        }
+
+        await fetchResults(data.query);
+      } catch {
+        alert("Network error. Make sure the API server is running.");
         setLoading(false);
         setSearchStatus("");
-        return;
       }
-
-      // kick off the fetch
-      await fetchResults(data.query);
-    } catch {
-      alert("Network error. Make sure the API server is running.");
-      setLoading(false);
-      setSearchStatus("");
+    } else {
+      // Keyword flow: send directly to catalog search (URL detection is also done server-side)
+      await fetchResults(input);
     }
   }
 
-  const redirectUrl = (productUrl: string) =>
-    `${API}/api/redirect?url=${encodeURIComponent(productUrl)}`;
+  const redirectUrl = (listing: Listing) => {
+    if (listing.listingId) {
+      return `${API}/api/redirect/${listing.listingId}`;
+    }
+    return `${API}/api/redirect?url=${encodeURIComponent(listing.url)}`;
+  };
+
+  // Fetch price history when results are ready
+  useEffect(() => {
+    if (result?.bestDeal?.listingId) {
+      fetch(`${API}/api/listings/${result.bestDeal.listingId}/price-history`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data?.history) setPriceHistory(data.history);
+        })
+        .catch(() => {});
+    }
+  }, [result?.bestDeal?.listingId]);
+
+  const handleShare = (listing: Listing) => {
+    if (!listing.listingId) return;
+    const dealUrl = `${window.location.origin.replace(':3000', ':4000')}/api/deal/${listing.listingId}`;
+    navigator.clipboard.writeText(dealUrl);
+    alert("Đã sao chép liên kết deal! Bạn có thể chia sẻ cho bạn bè.");
+  };
+
+  const fetchHotDeals = useCallback(async () => {
+    setLoadingHotDeals(true);
+    try {
+      const res = await fetch(`${API}/api/deals/hot`);
+      if (res.ok) {
+        const data = await res.json();
+        setHotDeals(data.deals || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch hot deals:", err);
+    } finally {
+      setLoadingHotDeals(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHotDeals();
+  }, [fetchHotDeals]);
 
   return (
     <div className={`flex flex-col bg-[#F3F4F6] text-slate-900 font-sans selection:bg-teal-100 min-h-screen`}>
@@ -191,7 +285,7 @@ export default function HomePage() {
             <div className="bg-[#1e293b] text-white w-7 h-7 rounded shrink-0 flex items-center justify-center font-bold text-xs">
               DF
             </div>
-            <span className="font-bold text-lg tracking-tight hidden sm:block">ShopeeBest</span>
+            <span className="font-bold text-lg tracking-tight hidden sm:block">SmartDeal</span>
           </div>
 
           <div className="flex-1 max-w-lg mx-6 hidden md:block">
@@ -205,7 +299,7 @@ export default function HomePage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <input
                 type="text"
-                placeholder="Tìm sản phẩm Shopee (tên hoặc link)..."
+                placeholder="Tìm sản phẩm (tên hoặc link)..."
                 className="w-full pl-9 pr-4 py-1.5 bg-[#e2e8f0] border-none rounded-md text-sm focus:ring-2 focus:ring-[#0f172a] outline-none placeholder:text-slate-500"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
@@ -214,12 +308,7 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="text-sm font-semibold hover:text-teal-600 transition-colors">
-              Đăng Nhập
-            </button>
-            <div className="w-7 h-7 rounded-sm bg-slate-200 flex items-center justify-center overflow-hidden cursor-pointer">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            </div>
+            {/* Auth buttons removed */}
           </div>
         </div>
       </header>
@@ -232,11 +321,11 @@ export default function HomePage() {
               <div className="mb-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
                 <div className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 px-4 py-2 rounded-full text-xs font-bold mb-6 tracking-wide shadow-sm border border-teal-100">
                   <span className="flex h-2 w-2 rounded-full bg-teal-500 animate-pulse"></span>
-                  CẬP NHẬT GIÁ SHOPEE THEO THỜI GIAN THỰC
+                  CẬP NHẬT GIÁ THEO THỜI GIAN THỰC
                 </div>
                 <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-6 tracking-tight leading-[1.1]">
                   Tìm Sản Phẩm <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-teal-400">Tốt Nhất</span> <br />
-                  Tại Shopee
+                  Tiết Kiệm Nhất
                 </h1>
                 <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed">
                   Dán link hoặc nhập tên sản phẩm để chúng tôi giúp bạn lọc ra những lựa chọn chất lượng nhất với giá hời nhất từ các shop uy tín.
@@ -254,7 +343,7 @@ export default function HomePage() {
                 </div>
                 <input
                   type="text"
-                  placeholder="Dán link sản phẩm Shopee hoặc nhập tên sản phẩm..."
+                  placeholder="Dán link sản phẩm hoặc nhập tên sản phẩm..."
                   className="w-full pl-16 pr-6 py-6 bg-transparent text-xl font-medium outline-none placeholder:text-slate-300 transition-all text-slate-800"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
@@ -315,6 +404,94 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* --- HOT DEALS SECTION --- */}
+        {!hasSearched && (
+          <div className="w-full max-w-7xl mx-auto px-6 mb-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-black text-[#0f172a] flex items-center gap-2">
+                <Flame className="w-6 h-6 text-orange-500 fill-orange-500" /> Deal Hot Trong Ngày
+              </h2>
+              <button 
+                onClick={() => fetchHotDeals()}
+                className="text-xs font-black text-teal-600 hover:text-teal-700 uppercase tracking-widest flex items-center gap-2"
+              >
+                Làm mới <Zap className="w-3 h-3" />
+              </button>
+            </div>
+
+            {loadingHotDeals && hotDeals.length === 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm animate-pulse h-[200px]"></div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {hotDeals.map((deal) => (
+                    <a 
+                      key={deal.listingId}
+                      href={`${API}/api/deal/${deal.listingId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group bg-white border border-slate-200 hover:border-teal-500 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all active:scale-[0.98] flex gap-4"
+                    >
+                      <div className="w-24 h-24 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+                        {deal.imageUrl ? (
+                          <img src={deal.imageUrl} alt={deal.productName} className="object-contain w-full h-full" />
+                        ) : (
+                          <Zap className="w-6 h-6 text-slate-200" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h3 className="font-bold text-slate-900 text-sm line-clamp-2 leading-snug group-hover:text-teal-600 transition-colors">
+                            {deal.productName}
+                          </h3>
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
+                          {deal.storage || ''} {deal.color || ''}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-teal-600 text-lg">{formatPrice(deal.price)}</span>
+                          <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded leading-none shrink-0">
+                            -{deal.discountPercent}%
+                          </span>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+
+                {/* Trending Searches */}
+                <div className="mt-16 pt-12 border-t border-slate-200">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 text-center">Xu Hướng Tìm Kiếm</h3>
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    {['iphone 15', 'airpods pro', 'la roche posay', 'keychron k8', 'sony xm5'].map(keyword => (
+                      <button
+                        key={keyword}
+                        onClick={() => {
+                          setUrl(keyword);
+                          handleSubmit({ preventDefault: () => {} } as any, keyword);
+                        }}
+                        className="px-5 py-2.5 bg-white hover:bg-teal-50 border border-slate-200 hover:border-teal-500 text-slate-600 hover:text-teal-600 rounded-full text-sm font-bold transition-all shadow-sm active:scale-95 flex items-center gap-2"
+                      >
+                        <Search className="w-3 h-3 opacity-50" /> {keyword}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+            
+            {hotDeals.length === 0 && !loadingHotDeals && (
+              <div className="bg-slate-50 border border-slate-200 border-dashed rounded-2xl p-12 text-center text-slate-400">
+                Chưa có deal hot nào hôm nay. Hãy thử tìm kiếm sản phẩm bạn quan tâm!
+              </div>
+            )}
+          </div>
+        )}
+
 
         {/* --- SCROLLABLE RESULTS BLOCKS (Matching screenshot layout perfectly) --- */}
         {hasSearched && result && (
@@ -323,8 +500,25 @@ export default function HomePage() {
             <div className="w-full">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-black text-[#0f172a] flex items-center gap-2">
-                  <LayoutGrid className="w-5 h-5 text-teal-600" /> Danh Sách Sản Phẩm Shopee
+                  <LayoutGrid className="w-5 h-5 text-teal-600" /> Danh Sách Sản Phẩm
                 </h2>
+                
+                <div className="flex items-center gap-3">
+                  {dataSource && (
+                    <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                      dataSource === 'cache' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                      dataSource === 'db' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' :
+                      'bg-teal-50 text-teal-600 border-teal-200'
+                    }`}>
+                      NGUỒN: {dataSource === 'db' ? 'CƠ SỞ DỮ LIỆU' : dataSource === 'cache' ? 'BỘ NHỚ ĐỆM' : 'TRUY XUẤT TRỰC TIẾP'}
+                    </div>
+                  )}
+                  {catalogProduct && (
+                    <div className="px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest border border-slate-200">
+                      LƯỢT TÌM KIẾM: {catalogProduct.searchCount || 0}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col md:flex-row md:items-center gap-6 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
@@ -365,7 +559,7 @@ export default function HomePage() {
                 {/* Purchase Button for the main product */}
                 <div className="text-left md:text-right mt-4 md:mt-0 shrink-0">
                   <a
-                    href={redirectUrl(result.bestDeal.url)}
+                    href={redirectUrl(result.bestDeal)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex w-full md:w-auto items-center justify-center gap-2 bg-[#0f172a] hover:bg-teal-600 active:scale-95 text-white py-3 px-8 rounded-xl font-black text-sm transition-all shadow-md group"
@@ -385,8 +579,15 @@ export default function HomePage() {
               <div className="bg-white border-2 border-teal-500/10 rounded-xl p-8 shadow-xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
 
-                <div className="inline-flex items-center gap-1.5 bg-teal-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-[0.2em] shadow-lg mb-6">
-                  <Zap className="w-2.5 h-2.5 fill-white" /> LỰA CHỌN TỐT NHẤT
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="inline-flex items-center gap-1.5 bg-teal-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-[0.2em] shadow-lg">
+                    <Zap className="w-2.5 h-2.5 fill-white" /> LỰA CHỌN TỐT NHẤT
+                  </div>
+                  {result.bestDeal.isDeal && (
+                    <div className="inline-flex items-center gap-1.5 bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-[0.2em] shadow-lg animate-pulse">
+                      <Flame className="w-2.5 h-2.5 fill-white" /> DEAL HỜI -{result.bestDeal.discountPercent}%
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col md:flex-row justify-between items-start gap-10">
@@ -414,7 +615,7 @@ export default function HomePage() {
                       </div>
                       <div className="flex justify-between items-center text-sm font-semibold">
                         <span className="text-slate-500">Đã bán</span>
-                        <span className="font-black text-slate-900">{result.bestDeal.sold.toLocaleString()} sản phẩm</span>
+                        <span className="font-black text-slate-900">{formatSold(result.bestDeal.sold)} sản phẩm</span>
                       </div>
                     </div>
 
@@ -429,22 +630,39 @@ export default function HomePage() {
                     <div className="text-[3.5rem] font-black text-transparent bg-clip-text bg-gradient-to-br from-slate-900 to-slate-700 leading-none mb-2 tracking-tighter">
                       {formatPrice(result.bestDeal.price)}
                     </div>
-                    {dealDetection && (
-                      <div className="text-sm text-slate-400 line-through font-bold mb-6 italic">
-                        {formatPrice(dealDetection.meanPrice)}
+                    {(result.bestDeal.medianPrice || dealDetection) && (
+                      <div className="text-sm text-slate-400 line-through font-bold mb-2 italic">
+                        {formatPrice(result.bestDeal.medianPrice || dealDetection?.meanPrice || 0)}
+                      </div>
+                    )}
+                    {result.bestDeal.isDeal && (
+                      <div className="text-xs font-black text-red-500 mb-6">
+                        Tiết kiệm {formatPrice((result.bestDeal.medianPrice || 0) - result.bestDeal.price)} so với giá thị trường
                       </div>
                     )}
 
-                    <a
-                      href={redirectUrl(result.bestDeal.url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex w-full md:w-60 items-center justify-center gap-3 bg-gradient-to-r from-[#003B73] to-[#004a8f] hover:shadow-[0_10px_25px_-10px_rgba(0,59,115,0.5)] active:scale-95 text-white py-4 px-6 rounded-xl font-black text-base transition-all shadow-lg"
-                    >
-                      <ShoppingCart className="w-5 h-5" />
-                      MUA NGAY
-                      <ExternalLink className="w-4 h-4 ml-auto opacity-70" />
-                    </a>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <a
+                        href={redirectUrl(result.bestDeal)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex w-full md:w-60 items-center justify-center gap-3 bg-gradient-to-r from-[#003B73] to-[#004a8f] hover:shadow-[0_10px_25px_-10px_rgba(0,59,115,0.5)] active:scale-95 text-white py-4 px-6 rounded-xl font-black text-base transition-all shadow-lg"
+                      >
+                        <ShoppingCart className="w-5 h-5" />
+                        MUA NGAY
+                        <ExternalLink className="w-4 h-4 ml-auto opacity-70" />
+                      </a>
+                      
+                      {result.bestDeal.listingId && (
+                        <button
+                          onClick={() => handleShare(result.bestDeal)}
+                          className="inline-flex w-full md:w-auto items-center justify-center gap-2 bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-600 py-4 px-6 rounded-xl font-black text-sm transition-all shadow-sm active:scale-95"
+                        >
+                          <Share2 className="w-4 h-4" />
+                          CHIA SẺ
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                 </div>
@@ -500,16 +718,28 @@ export default function HomePage() {
                           <tr key={i} className="hover:bg-teal-50/30 transition-colors group">
                             <td className="px-6 py-5 min-w-[300px]">
                               <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded bg-[#f1f5f9] border border-slate-100 shrink-0 flex items-center justify-center overflow-hidden">
+                                <div className="w-12 h-12 rounded bg-[#f1f5f9] border border-slate-100 shrink-0 flex items-center justify-center overflow-hidden relative">
                                   {listing.image ? (
                                     /* eslint-disable-next-line @next/next/no-img-element */
                                     <img src={listing.image} className="w-full h-full object-cover" alt="thumb" />
                                   ) : (
                                     <Zap className="w-4 h-4 text-slate-300" />
                                   )}
+                                  {listing.isDeal && (
+                                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                                      <Flame className="w-2.5 h-2.5 text-white fill-white" />
+                                    </div>
+                                  )}
                                 </div>
-                                <div className="font-bold text-slate-900 text-sm line-clamp-2 leading-snug">
-                                  {listing.title}
+                                <div>
+                                  <div className="font-bold text-slate-900 text-sm line-clamp-2 leading-snug">
+                                    {listing.title}
+                                  </div>
+                                  {listing.isDeal && (
+                                    <span className="inline-flex items-center gap-1 mt-1 text-[9px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-full">
+                                      <Flame className="w-2.5 h-2.5" /> DEAL HỜI -{listing.discountPercent}%
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </td>
@@ -525,7 +755,10 @@ export default function HomePage() {
                               </div>
                             </td>
                             <td className="px-6 py-5 font-black text-slate-900 text-base whitespace-nowrap">
-                              {formatPrice(listing.price)}
+                              <div>{formatPrice(listing.price)}</div>
+                              {listing.isDeal && listing.medianPrice && (
+                                <div className="text-[10px] text-slate-400 line-through">{formatPrice(listing.medianPrice)}</div>
+                              )}
                             </td>
                             <td className="px-6 py-5 font-black whitespace-nowrap">
                               <div className="flex items-center gap-1">
@@ -533,17 +766,28 @@ export default function HomePage() {
                               </div>
                             </td>
                             <td className="px-6 py-5 font-bold text-slate-500 whitespace-nowrap">
-                              {listing.sold.toLocaleString()}
+                              {formatSold(listing.sold)}
                             </td>
                             <td className="px-6 py-5 text-right">
-                              <a
-                                href={redirectUrl(listing.url)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-teal-600 hover:text-white border-2 border-slate-100 hover:border-teal-600 text-slate-900 font-black text-[10px] uppercase tracking-widest rounded-lg transition-all shadow-sm active:scale-95"
-                              >
-                                <ShoppingCart className="w-3.5 h-3.5" /> MUA
-                              </a>
+                              <div className="flex items-center justify-end gap-2">
+                                {listing.listingId && (
+                                  <button
+                                    onClick={() => handleShare(listing)}
+                                    className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                                    title="Chia sẻ deal"
+                                  >
+                                    <Share2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                                <a
+                                  href={redirectUrl(listing)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-teal-600 hover:text-white border-2 border-slate-100 hover:border-teal-600 text-slate-900 font-black text-[10px] uppercase tracking-widest rounded-lg transition-all shadow-sm active:scale-95"
+                                >
+                                  <ShoppingCart className="w-3.5 h-3.5" /> MUA
+                                </a>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -590,34 +834,70 @@ export default function HomePage() {
               {/* Price History Block */}
               <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-xl flex flex-col relative overflow-hidden">
                 <h3 className="font-black text-xl text-[#0f172a] mb-8 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-teal-600" /> Lịch sử giá (30 ngày gần đây)
+                  <TrendingUp className="w-5 h-5 text-teal-600" /> Lịch sử giá
                 </h3>
 
-                {/* Fake Chart Grid */}
-                <div className="flex-1 flex items-end gap-3 text-[9px] text-slate-400 font-black uppercase tracking-widest pt-12 pb-2 h-40 w-full border-b border-slate-100">
-                  <div className="flex-1 flex flex-col justify-end items-center gap-2 h-full"><div className="w-full bg-teal-500/80 hover:bg-teal-500 rounded-t-md transition-all cursor-crosshair" style={{ height: '30%' }}></div>T3 01</div>
-                  <div className="flex-1 flex flex-col justify-end items-center gap-2 h-full"><div className="w-full bg-teal-500/80 hover:bg-teal-500 rounded-t-md transition-all cursor-crosshair" style={{ height: '40%' }}></div>T3 05</div>
-                  <div className="flex-1 flex flex-col justify-end items-center gap-2 h-full"><div className="w-full bg-emerald-400 rounded-t-md transition-all cursor-crosshair shadow-[0_0_15px_rgba(52,211,153,0.3)]" style={{ height: '100%' }}></div>T3 10</div>
-                  <div className="flex-1 flex flex-col justify-end items-center gap-2 h-full"><div className="w-full bg-teal-500/80 hover:bg-teal-500 rounded-t-md transition-all cursor-crosshair" style={{ height: '80%' }}></div>T3 15</div>
-                  <div className="flex-1 flex flex-col justify-end items-center gap-2 h-full"><div className="w-full bg-teal-500/80 hover:bg-teal-500 rounded-t-md transition-all cursor-crosshair" style={{ height: '75%' }}></div>T3 20</div>
-                  <div className="flex-1 flex flex-col justify-end items-center gap-2 h-full"><div className="w-full bg-teal-500/80 hover:bg-teal-500 rounded-t-md transition-all cursor-crosshair" style={{ height: '70%' }}></div>T3 25</div>
-                  <div className="flex-1 flex flex-col justify-end items-center gap-2 h-full"><div className="w-full bg-teal-500/80 hover:bg-teal-500 rounded-t-md transition-all cursor-crosshair" style={{ height: '60%' }}></div>T3 30</div>
-                </div>
+                {/* Chart */}
+                {(() => {
+                  const historyPrices = priceHistory.length > 0
+                    ? priceHistory.map(h => h.price)
+                    : [0.93, 0.95, 1.0, 0.88, 0.92, 0.90, 0.87].map(m => result.bestDeal.price * m);
+                  const minH = Math.min(...historyPrices);
+                  const maxH = Math.max(...historyPrices);
+                  const range = maxH - minH || 1;
+                  const labels = priceHistory.length > 0
+                    ? priceHistory.map(h => new Date(h.recordedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }))
+                    : ['T3 01', 'T3 05', 'T3 10', 'T3 15', 'T3 20', 'T3 25', 'T3 30'];
+
+                  return (
+                    <div className="flex-1 flex items-end gap-3 text-[9px] text-slate-400 font-black uppercase tracking-widest pt-12 pb-2 h-40 w-full border-b border-slate-100">
+                      {historyPrices.map((p, i) => {
+                        const pct = ((p - minH) / range) * 80 + 20;
+                        const isLowest = p === minH;
+                        return (
+                          <div key={i} className="flex-1 flex flex-col justify-end items-center gap-2 h-full group/bar relative">
+                            <div className="absolute -top-6 opacity-0 group-hover/bar:opacity-100 text-[10px] text-slate-600 font-black transition-opacity bg-white px-2 py-1 rounded shadow-sm border border-slate-100 whitespace-nowrap">
+                              {formatPrice(p)}
+                            </div>
+                            <div
+                              className={`w-full rounded-t-md transition-all cursor-crosshair ${
+                                isLowest
+                                  ? 'bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.3)]'
+                                  : 'bg-teal-500/80 hover:bg-teal-500'
+                              }`}
+                              style={{ height: `${pct}%` }}
+                            />
+                            {i % Math.max(1, Math.floor(historyPrices.length / 7)) === 0 && labels[i]}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
 
                 <div className="flex justify-between items-center mt-6">
                   <div>
                     <div className="text-[10px] text-slate-400 font-black tracking-widest uppercase mb-1">THẤP NHẤT</div>
-                    <div className="text-base font-black text-teal-600">{formatPrice(result.bestDeal.price * 0.9)}</div>
+                    <div className="text-base font-black text-teal-600">
+                      {formatPrice(result.bestDeal.lowestPrice || result.bestDeal.price * 0.9)}
+                    </div>
                   </div>
                   <div>
-                    <div className="text-[10px] text-slate-400 font-black tracking-widest uppercase mb-1">CAO NHẤT</div>
-                    <div className="text-base font-black text-[#0f172a]">{formatPrice(result.bestDeal.price * 1.4)}</div>
+                    <div className="text-[10px] text-slate-400 font-black tracking-widest uppercase mb-1">GIÁ THỊ TRƯỜNG</div>
+                    <div className="text-base font-black text-[#0f172a]">
+                      {formatPrice(result.bestDeal.medianPrice || dealDetection?.meanPrice || result.bestDeal.price * 1.1)}
+                    </div>
                   </div>
                   <div>
                     <div className="text-[10px] text-slate-400 font-black tracking-widest uppercase mb-1">GIÁ HIỆN TẠI</div>
                     <div className="text-base font-black text-teal-600">{formatPrice(result.bestDeal.price)}</div>
                   </div>
                 </div>
+                {priceHistory.length === 0 && (
+                  <div className="text-[10px] text-slate-400 font-medium mt-4 italic">
+                    * Dữ liệu mẫu — giá thực tế sẽ hiển thị khi đủ lịch sử
+                  </div>
+                )}
               </div>
 
             </div>

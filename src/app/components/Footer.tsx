@@ -11,12 +11,12 @@ export default function Footer() {
                 <div className="flex flex-col gap-6">
                     <div className="flex items-center gap-2">
                         <div className="bg-white text-[#0f172a] w-8 h-8 rounded flex items-center justify-center font-bold text-sm shadow-xl">
-                            SB
+                            SD
                         </div>
-                        <span className="font-black text-xl tracking-tight">ShopeeBest</span>
+                        <span className="font-black text-xl tracking-tight">SmartDeal</span>
                     </div>
                     <p className="text-slate-400 text-sm leading-relaxed max-w-xs font-medium">
-                        Công cụ hỗ trợ tìm kiếm sản phẩm chất lượng nhất trên Shopee, giúp bạn mua sắm thông minh và tiết kiệm hơn mỗi ngày.
+                        Công cụ hỗ trợ tìm kiếm sản phẩm chất lượng nhất, giúp bạn mua sắm thông minh và tiết kiệm hơn mỗi ngày.
                     </p>
                     <div className="flex items-center gap-4 pt-2 text-slate-400">
                         <a href="#" className="hover:text-white transition-colors"><Facebook className="w-5 h-5" /></a>

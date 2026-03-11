@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "./context/AuthContext";
+// import { AuthProvider } from "./context/AuthContext"; // Removed auth
 
 const inter = Inter({
   variable: "--font-inter",
@@ -11,7 +11,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "DealFinder — Find the Best Deal Across Marketplaces",
   description:
-    "Paste a Shopee, Lazada, or TikTok Shop product link and instantly compare prices, ratings, and seller trust across e-commerce platforms.",
+    "Smartly compare prices, ratings, and seller trust across top marketplaces to find the best deals instantly.",
 };
 
 export default function RootLayout({
@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.variable}>
-        <AuthProvider>{children}</AuthProvider>
+        {children}
       </body>
     </html>
   );
