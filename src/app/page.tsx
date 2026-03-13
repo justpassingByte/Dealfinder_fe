@@ -54,12 +54,17 @@ const MARKETPLACE_URL_REGEX = /^https?:\/\/(www\.)?(shopee|lazada)\./i;
 
 interface HotDeal {
   listingId: string;
+  itemId: string;
   productName: string;
   storage: string | null;
   color: string | null;
   price: number;
   discountPercent: number;
   imageUrl: string | null;
+  shopName: string;
+  rating: number;
+  sold: number;
+  marketplace: string;
 }
 
 function formatPrice(price: number): string {
@@ -95,6 +100,7 @@ export default function HomePage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [hotDeals, setHotDeals] = useState<HotDeal[]>([]);
   const [loadingHotDeals, setLoadingHotDeals] = useState(false);
+  const [trends, setTrends] = useState<string[]>([]);
 
   const toggleSort = (col: "price" | "sold") => {
     if (sortBy === col) {
@@ -266,9 +272,27 @@ export default function HomePage() {
     }
   }, []);
 
+  const fetchTrends = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/api/trends?limit=8`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.trends && data.trends.length > 0) {
+          setTrends(data.trends);
+        } else {
+          // Fallback if DB is empty
+          setTrends(['iphone 15', 'airpods pro', 'sony xm5', 'keychron', 'samsung s24']);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch trends:", err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchHotDeals();
-  }, [fetchHotDeals]);
+    fetchTrends();
+  }, [fetchHotDeals, fetchTrends]);
 
   return (
     <div className={`flex flex-col bg-[#F3F4F6] text-slate-900 font-sans selection:bg-teal-100 min-h-screen`}>
@@ -434,29 +458,76 @@ export default function HomePage() {
                       href={`${API}/api/deal/${deal.listingId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group bg-white border border-slate-200 hover:border-teal-500 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all active:scale-[0.98] flex gap-4"
+                      className="group relative bg-white border border-slate-200 hover:border-teal-500 rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all active:scale-[0.98] flex gap-5 overflow-hidden"
                     >
-                      <div className="w-24 h-24 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+                      {/* Decorative background element for premium feel */}
+                      <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-slate-50 rounded-full group-hover:bg-teal-50/50 transition-colors duration-500" />
+                      
+                      <div className="w-28 h-28 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-500 relative z-10">
                         {deal.imageUrl ? (
                           <img src={deal.imageUrl} alt={deal.productName} className="object-contain w-full h-full" />
                         ) : (
-                          <Zap className="w-6 h-6 text-slate-200" />
+                          <Zap className="w-8 h-8 text-slate-200" />
                         )}
+                        <div className="absolute top-1.5 left-1.5 bg-[#0f172a]/80 backdrop-blur-sm text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                          {deal.marketplace}
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="font-bold text-slate-900 text-sm line-clamp-2 leading-snug group-hover:text-teal-600 transition-colors">
+                      
+                      <div className="flex-1 min-w-0 flex flex-col justify-between relative z-10">
+                        <div>
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {deal.sold > 500 && (
+                              <span className="bg-amber-100 text-amber-700 text-[8px] font-black px-1.5 py-0.5 rounded uppercase border border-amber-200">Bán chạy</span>
+                            )}
+                            {deal.rating >= 4.8 && (
+                              <span className="bg-teal-100 text-teal-700 text-[8px] font-black px-1.5 py-0.5 rounded uppercase border border-teal-200">Đánh giá cao</span>
+                            )}
+                          </div>
+                          
+                          <h3 className="font-bold text-slate-800 text-sm line-clamp-2 leading-tight group-hover:text-teal-600 transition-colors mb-1">
                             {deal.productName}
                           </h3>
+                          
+                          <div className="flex flex-col gap-0.5">
+                            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                              ID: {deal.itemId?.substring(0, 8) || 'N/A'}
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold">
+                              <span className="truncate max-w-[100px]">{deal.shopName}</span>
+                              {(deal.storage || deal.color) && (
+                                <>
+                                  <span className="w-0.5 h-0.5 rounded-full bg-slate-300"></span>
+                                  <span className="text-slate-400 font-medium">{deal.storage} {deal.color}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
-                          {deal.storage || ''} {deal.color || ''}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-black text-teal-600 text-lg">{formatPrice(deal.price)}</span>
-                          <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded leading-none shrink-0">
-                            -{deal.discountPercent}%
-                          </span>
+
+                        <div className="mt-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="flex items-center gap-0.5 text-amber-500">
+                              <Star className="w-3 h-3 fill-current" />
+                              <span className="text-xs font-black">{(deal.rating || 0).toFixed(1)}</span>
+                            </div>
+                            <span className="text-slate-300">|</span>
+                            <span className="text-[10px] text-slate-500 font-bold">Đã bán {formatSold(deal.sold || 0)}</span>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex flex-col">
+                              <span className="font-black text-teal-600 text-lg tracking-tighter leading-none">
+                                {formatPrice(deal.price)}
+                              </span>
+                              <span className="text-[9px] text-slate-400 font-bold uppercase mt-1">Giá hời nhất</span>
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm">
+                                -{deal.discountPercent}%
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </a>
@@ -467,7 +538,7 @@ export default function HomePage() {
                 <div className="mt-16 pt-12 border-t border-slate-200">
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 text-center">Xu Hướng Tìm Kiếm</h3>
                   <div className="flex flex-wrap items-center justify-center gap-3">
-                    {['iphone 15', 'airpods pro', 'la roche posay', 'keychron k8', 'sony xm5'].map(keyword => (
+                    {trends.map(keyword => (
                       <button
                         key={keyword}
                         onClick={() => {
