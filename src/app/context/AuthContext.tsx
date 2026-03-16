@@ -9,7 +9,14 @@ import {
     ReactNode,
 } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const getApiUrl = () => {
+    if (typeof window !== "undefined") {
+        return process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:4000`;
+    }
+    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+};
+
+const API = getApiUrl();
 
 interface User {
     id: string;

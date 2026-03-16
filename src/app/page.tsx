@@ -47,7 +47,15 @@ interface PriceHistoryEntry {
   recordedAt: string;
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const getApiUrl = () => {
+  if (typeof window !== "undefined") {
+    return process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:4000`;
+  }
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+};
+
+const API = getApiUrl();
+console.log("[FrontEnd] API URL:", API);
 
 // Regex to detect marketplace URLs
 const MARKETPLACE_URL_REGEX = /^https?:\/\/(www\.)?(shopee|lazada)\./i;
@@ -135,7 +143,7 @@ export default function HomePage() {
 
       const searchData = await searchRes.json();
       const listings: Listing[] = searchData.listings || [];
-      
+
       // Save catalog-specific metadata
       setCatalogProduct(searchData.product);
       setDataSource(searchData.source);
@@ -246,7 +254,7 @@ export default function HomePage() {
         .then(data => {
           if (data?.history) setPriceHistory(data.history);
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [result?.bestDeal?.listingId]);
 
@@ -281,7 +289,7 @@ export default function HomePage() {
           setTrends(data.trends);
         } else {
           // Fallback if DB is empty
-          setTrends(['iphone 15', 'airpods pro', 'sony xm5', 'keychron', 'samsung s24']);
+          setTrends(['nồi cơm điện', 'tai nghe bluetooth', 'giày sneaker nam', 'sạc dự phòng', 'bình giữ nhiệt']);
         }
       }
     } catch (err) {
@@ -307,7 +315,7 @@ export default function HomePage() {
             }}
           >
             <div className="bg-[#1e293b] text-white w-7 h-7 rounded shrink-0 flex items-center justify-center font-bold text-xs">
-              DF
+              SD
             </div>
             <span className="font-bold text-lg tracking-tight hidden sm:block">SmartDeal</span>
           </div>
@@ -435,7 +443,7 @@ export default function HomePage() {
               <h2 className="text-2xl font-black text-[#0f172a] flex items-center gap-2">
                 <Flame className="w-6 h-6 text-orange-500 fill-orange-500" /> Deal Hot Trong Ngày
               </h2>
-              <button 
+              <button
                 onClick={() => fetchHotDeals()}
                 className="text-xs font-black text-teal-600 hover:text-teal-700 uppercase tracking-widest flex items-center gap-2"
               >
@@ -453,7 +461,7 @@ export default function HomePage() {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {hotDeals.map((deal) => (
-                    <a 
+                    <a
                       key={deal.listingId}
                       href={`${API}/api/deal/${deal.listingId}`}
                       target="_blank"
@@ -462,7 +470,7 @@ export default function HomePage() {
                     >
                       {/* Decorative background element for premium feel */}
                       <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-slate-50 rounded-full group-hover:bg-teal-50/50 transition-colors duration-500" />
-                      
+
                       <div className="w-28 h-28 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-500 relative z-10">
                         {deal.imageUrl ? (
                           <img src={deal.imageUrl} alt={deal.productName} className="object-contain w-full h-full" />
@@ -473,7 +481,7 @@ export default function HomePage() {
                           {deal.marketplace}
                         </div>
                       </div>
-                      
+
                       <div className="flex-1 min-w-0 flex flex-col justify-between relative z-10">
                         <div>
                           <div className="flex flex-wrap gap-1 mb-2">
@@ -484,11 +492,11 @@ export default function HomePage() {
                               <span className="bg-teal-100 text-teal-700 text-[8px] font-black px-1.5 py-0.5 rounded uppercase border border-teal-200">Đánh giá cao</span>
                             )}
                           </div>
-                          
+
                           <h3 className="font-bold text-slate-800 text-sm line-clamp-2 leading-tight group-hover:text-teal-600 transition-colors mb-1">
                             {deal.productName}
                           </h3>
-                          
+
                           <div className="flex flex-col gap-0.5">
                             <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                               ID: {deal.itemId?.substring(0, 8) || 'N/A'}
@@ -514,7 +522,7 @@ export default function HomePage() {
                             <span className="text-slate-300">|</span>
                             <span className="text-[10px] text-slate-500 font-bold">Đã bán {formatSold(deal.sold || 0)}</span>
                           </div>
-                          
+
                           <div className="flex items-center justify-between">
                             <div className="flex flex-col">
                               <span className="font-black text-teal-600 text-lg tracking-tighter leading-none">
@@ -543,7 +551,7 @@ export default function HomePage() {
                         key={keyword}
                         onClick={() => {
                           setUrl(keyword);
-                          handleSubmit({ preventDefault: () => {} } as any, keyword);
+                          handleSubmit({ preventDefault: () => { } } as any, keyword);
                         }}
                         className="px-5 py-2.5 bg-white hover:bg-teal-50 border border-slate-200 hover:border-teal-500 text-slate-600 hover:text-teal-600 rounded-full text-sm font-bold transition-all shadow-sm active:scale-95 flex items-center gap-2"
                       >
@@ -554,7 +562,7 @@ export default function HomePage() {
                 </div>
               </>
             )}
-            
+
             {hotDeals.length === 0 && !loadingHotDeals && (
               <div className="bg-slate-50 border border-slate-200 border-dashed rounded-2xl p-12 text-center text-slate-400">
                 Chưa có deal hot nào hôm nay. Hãy thử tìm kiếm sản phẩm bạn quan tâm!
@@ -573,14 +581,13 @@ export default function HomePage() {
                 <h2 className="text-2xl font-black text-[#0f172a] flex items-center gap-2">
                   <LayoutGrid className="w-5 h-5 text-teal-600" /> Danh Sách Sản Phẩm
                 </h2>
-                
+
                 <div className="flex items-center gap-3">
                   {dataSource && (
-                    <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                      dataSource === 'cache' ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                      dataSource === 'db' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' :
-                      'bg-teal-50 text-teal-600 border-teal-200'
-                    }`}>
+                    <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${dataSource === 'cache' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                        dataSource === 'db' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' :
+                          'bg-teal-50 text-teal-600 border-teal-200'
+                      }`}>
                       NGUỒN: {dataSource === 'db' ? 'CƠ SỞ DỮ LIỆU' : dataSource === 'cache' ? 'BỘ NHỚ ĐỆM' : 'TRUY XUẤT TRỰC TIẾP'}
                     </div>
                   )}
@@ -723,7 +730,7 @@ export default function HomePage() {
                         MUA NGAY
                         <ExternalLink className="w-4 h-4 ml-auto opacity-70" />
                       </a>
-                      
+
                       {result.bestDeal.listingId && (
                         <button
                           onClick={() => handleShare(result.bestDeal)}
@@ -931,11 +938,10 @@ export default function HomePage() {
                               {formatPrice(p)}
                             </div>
                             <div
-                              className={`w-full rounded-t-md transition-all cursor-crosshair ${
-                                isLowest
+                              className={`w-full rounded-t-md transition-all cursor-crosshair ${isLowest
                                   ? 'bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.3)]'
                                   : 'bg-teal-500/80 hover:bg-teal-500'
-                              }`}
+                                }`}
                               style={{ height: `${pct}%` }}
                             />
                             {i % Math.max(1, Math.floor(historyPrices.length / 7)) === 0 && labels[i]}

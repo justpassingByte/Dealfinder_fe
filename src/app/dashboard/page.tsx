@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const getApiUrl = () => {
+    if (typeof window !== "undefined") {
+        return process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:4000`;
+    }
+    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+};
+
+const API = getApiUrl();
 
 interface CreatorProfile {
     id: string;
