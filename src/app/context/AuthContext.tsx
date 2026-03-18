@@ -10,10 +10,15 @@ import {
 } from "react";
 
 const getApiUrl = () => {
-    if (typeof window !== "undefined") {
-        return process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:4000`;
+    let url = process.env.NEXT_PUBLIC_API_URL || "";
+    if (!url) {
+        if (typeof window !== "undefined") {
+            url = `http://${window.location.hostname}:4000`;
+        } else {
+            url = "http://localhost:4000";
+        }
     }
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+    return url.replace(/\/api\/?$/, "").replace(/\/$/, "");
 };
 
 const API = getApiUrl();

@@ -25,7 +25,8 @@ export const metadata: Metadata = {
 };
 
 const getApiUrl = () => {
-  return process.env.NEXT_PUBLIC_INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const url = process.env.NEXT_PUBLIC_INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  return url.replace(/\/api\/?$/, "").replace(/\/$/, "");
 };
 
 async function getInitialDeals(): Promise<HotDeal[]> {
