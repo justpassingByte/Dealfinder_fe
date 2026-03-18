@@ -162,7 +162,7 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
       }
 
       const searchData = await searchRes.json();
-      
+
       if (!searchRes.ok) {
         alert(searchData.error || "Tìm kiếm thất bại.");
         setLoading(false);
@@ -172,9 +172,9 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
 
       // Backend search/catalog already returns flattened listings, but we fallback to variants if needed
       let listings: Listing[] = searchData.listings || [];
-      
+
       if (listings.length === 0 && searchData.variants) {
-        listings = searchData.variants.flatMap((v: any) => 
+        listings = searchData.variants.flatMap((v: any) =>
           (v.listings || []).map((l: any) => ({
             ...l,
             title: v.variant?.normalized_variant_name || l.title || q,
