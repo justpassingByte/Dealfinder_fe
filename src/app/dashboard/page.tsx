@@ -297,13 +297,13 @@ export default function DashboardPage() {
                                     <tbody>
                                         {recentClicks.map((c) => (
                                             <tr key={c.id}>
-                                                <td>
+                                                <td data-label="URL sản phẩm">
                                                     <span className="listing-title">
                                                         {c.product_url}
                                                     </span>
                                                 </td>
-                                                <td>{new Date(c.timestamp).toLocaleString()}</td>
-                                                <td>{c.ip || "—"}</td>
+                                                <td data-label="Thời gian">{new Date(c.timestamp).toLocaleString()}</td>
+                                                <td data-label="IP">{c.ip || "—"}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -331,15 +331,15 @@ export default function DashboardPage() {
                                     <tbody>
                                         {recentOrders.map((o) => (
                                             <tr key={o.id}>
-                                                <td>{o.affiliate_order_id}</td>
-                                                <td style={{ color: "var(--green)", fontWeight: 600 }}>
+                                                <td data-label="Mã đơn hàng">{o.affiliate_order_id}</td>
+                                                <td data-label="Hoa hồng" style={{ color: "var(--green)", fontWeight: 600 }}>
                                                     {o.commission_amount.toLocaleString("vi-VN", {
                                                         style: "currency",
                                                         currency: "VND",
                                                         maximumFractionDigits: 0,
                                                     })}
                                                 </td>
-                                                <td>{new Date(o.timestamp).toLocaleString()}</td>
+                                                <td data-label="Thời gian">{new Date(o.timestamp).toLocaleString()}</td>
                                             </tr>
                                         ))}
                                     </tbody>

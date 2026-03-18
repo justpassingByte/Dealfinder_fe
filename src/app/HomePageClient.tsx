@@ -156,35 +156,53 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
         return;
       }
 
+      const searchData = await searchRes.json();
+      
       if (!searchRes.ok) {
-        const data = await searchRes.json();
-        alert(data.error || "Tìm kiếm thất bại.");
+        alert(searchData.error || "Tìm kiếm thất bại.");
         setLoading(false);
         setSearchStatus("");
         return;
       }
 
-      const searchData = await searchRes.json();
-      const listings: Listing[] = searchData.listings || [];
+      // Backend search/catalog already returns flattened listings, but we fallback to variants if needed
+      let listings: Listing[] = searchData.listings || [];
+      
+      if (listings.length === 0 && searchData.variants) {
+        listings = searchData.variants.flatMap((v: any) => 
+          (v.listings || []).map((l: any) => ({
+            ...l,
+            title: v.variant?.normalized_variant_name || l.title || q,
+            url: l.product_url || l.url,
+            image: l.image_url || l.image,
+            shop: l.shop_name || l.shop,
+            listingId: l.id
+          }))
+        );
+      }
 
       // Save catalog-specific metadata
       setCatalogProduct(searchData.product);
       setDataSource(searchData.source);
 
       if (listings.length === 0) {
-        alert("Không tìm thấy kết quả nào cho sản phẩm này.");
+        alert("Không tìm thấy sản phẩm này trong danh mục hoặc kết quả tìm kiếm trống.");
         setLoading(false);
         setSearchStatus("");
         return;
       }
 
       setSearchStatus("Đang so sánh người bán & áp dụng phân tích AI...");
-      // 2. Compare
-      const compareRes = await fetch(
-        `${API}/api/compare?listings=${encodeURIComponent(JSON.stringify(listings))}`
-      );
+      // 2. Compare (using POST to handle large sets and avoid URL length limits)
+      const compareRes = await fetch(`${API}/api/compare`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listings }),
+      });
+
       if (!compareRes.ok) {
-        alert("So sánh thất bại.");
+        const errData = await compareRes.json().catch(() => ({}));
+        alert(errData.error || "So sánh thất bại.");
         setLoading(false);
         setSearchStatus("");
         return;
@@ -193,7 +211,7 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
       const compareData: ComparisonResult = await compareRes.json();
       setResult(compareData);
 
-      // 3. AI: Deal Detection (fire-and-forget)
+      // 3. AI: Deal Detection
       try {
         const aiRes = await fetch(`${API}/api/ai/detect-deals`, {
           method: "POST",
@@ -417,13 +435,13 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
               className={`relative bg-white p-2 rounded-3xl shadow-[0_20px_70px_-10px_rgba(0,0,0,0.1)] transition-all duration-500 ${hasSearched ? "scale-95" : "scale-100"}`}
             >
               <div className="relative flex items-center">
-                <div className="absolute left-6 text-slate-400">
-                  <Search className="w-6 h-6" />
+                <div className="absolute left-4 md:left-6 text-slate-400">
+                  <Search className="w-5 h-5 md:w-6 h-6" />
                 </div>
                 <input
                   type="text"
                   placeholder="Dán link sản phẩm hoặc nhập tên sản phẩm..."
-                  className="w-full pl-16 pr-6 py-6 bg-transparent text-xl font-medium outline-none placeholder:text-slate-300 transition-all text-slate-800"
+                  className="w-full pl-12 md:pl-16 pr-4 md:pr-6 py-4 md:py-6 bg-transparent text-lg md:text-xl font-medium outline-none placeholder:text-slate-300 transition-all text-slate-800"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   onFocus={() => setFocusedInput("main")}
@@ -681,7 +699,7 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
                 <div className="flex-1">
                   <h3 className="font-extrabold text-lg text-slate-900 mb-2 leading-snug">{result.bestDeal.title}</h3>
                   <div className="text-[10px] text-slate-400 font-black mb-1 uppercase tracking-[0.2em]">GIÁ THỊ TRƯỜNG</div>
-                  <div className="text-3xl font-black text-slate-900 tracking-tighter">
+                  <div className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">
                     {dealDetection ? formatPrice(dealDetection.meanPrice) : formatPrice(result.bestDeal.price)}
                   </div>
                   <div className="flex items-end gap-x-12 mt-4">
@@ -771,7 +789,7 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
 
                   <div className="text-left w-full md:w-auto md:text-right">
                     <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2">GIÁ ƯU ĐÃI</div>
-                    <div className="text-[3.5rem] font-black text-transparent bg-clip-text bg-gradient-to-br from-slate-900 to-slate-700 leading-none mb-2 tracking-tighter">
+                    <div className="text-[2.5rem] md:text-[3.5rem] font-black text-transparent bg-clip-text bg-gradient-to-br from-slate-900 to-slate-700 leading-none mb-2 tracking-tighter">
                       {formatPrice(result.bestDeal.price)}
                     </div>
                     {(result.bestDeal.medianPrice || dealDetection) && (
@@ -822,7 +840,7 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
               </div>
 
               <div className="bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="md:overflow-x-auto overflow-hidden">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50/50 border-b border-slate-100 whitespace-nowrap">
                       <tr className="text-slate-400 text-[10px] font-black tracking-[0.2em] uppercase">
@@ -859,8 +877,8 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
                           return (valA - valB) * multiplier;
                         })
                         .map((listing, i) => (
-                          <tr key={i} className="hover:bg-teal-50/30 transition-colors group">
-                            <td className="px-6 py-5 min-w-[300px]">
+                          <tr key={i} className="seller-row hover:bg-teal-50/30 transition-colors group">
+                            <td className="px-6 py-5 md:min-w-[300px] col-product" data-label="Sản phẩm">
                               <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 rounded bg-[#f1f5f9] border border-slate-100 shrink-0 flex items-center justify-center overflow-hidden relative">
                                   {listing.image ? (
@@ -874,7 +892,7 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
                                     </div>
                                   )}
                                 </div>
-                                <div>
+                                <div className="min-w-0 flex-1">
                                   <div className="font-bold text-slate-900 text-sm line-clamp-2 leading-snug">
                                     {listing.title}
                                   </div>
@@ -886,7 +904,7 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-5 min-w-[200px] whitespace-normal">
+                            <td className="px-6 py-5 md:min-w-[200px] whitespace-normal col-shop" data-label="Cửa hàng">
                               <div className="flex items-center gap-2">
                                 <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400">
                                   {listing.shop.charAt(0)}
@@ -897,21 +915,21 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-5 font-black text-slate-900 text-base whitespace-nowrap">
+                            <td className="px-6 py-5 font-black text-slate-900 text-base md:whitespace-nowrap whitespace-normal col-price" data-label="Giá">
                               <div>{formatPrice(listing.price)}</div>
                               {listing.isDeal && listing.medianPrice && (
                                 <div className="text-[10px] text-slate-400 line-through">{formatPrice(listing.medianPrice)}</div>
                               )}
                             </td>
-                            <td className="px-6 py-5 font-black whitespace-nowrap">
+                            <td className="px-6 py-5 font-black md:whitespace-nowrap whitespace-normal col-rating" data-label="Đánh giá">
                               <div className="flex items-center gap-1">
                                 {listing.rating.toFixed(1)} <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                               </div>
                             </td>
-                            <td className="px-6 py-5 font-bold text-slate-500 whitespace-nowrap">
+                            <td className="px-6 py-5 font-bold text-slate-500 md:whitespace-nowrap whitespace-normal col-sold" data-label="Đã bán">
                               {formatSold(listing.sold)}
                             </td>
-                            <td className="px-6 py-5 text-right">
+                            <td className="px-6 py-5 text-right col-action">
                               <div className="flex items-center justify-end gap-2">
                                 {listing.listingId && (
                                   <button
