@@ -10,12 +10,12 @@ import {
 } from "react";
 
 const getApiUrl = () => {
-    let url = process.env.NEXT_PUBLIC_API_URL || "";
+    let url = process.env.NEXT_PUBLIC_INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL;
     if (!url) {
-        if (typeof window !== "undefined") {
-            url = `http://${window.location.hostname}:4000`;
-        } else {
+        if (process.env.NODE_ENV === "development") {
             url = "http://localhost:4000";
+        } else {
+            url = "";
         }
     }
     return url.replace(/\/api\/?$/, "").replace(/\/$/, "");
