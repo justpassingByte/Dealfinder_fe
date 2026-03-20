@@ -31,6 +31,22 @@ const emptySummary: ScraperProfileSummary = {
     captchaCount24h: 0,
 };
 
+function deriveSummaryFromProfiles(profiles: ScraperProfileListItem[]): ScraperProfileSummary {
+    const totalRisk = profiles.reduce((sum, profile) => sum + profile.riskScore, 0);
+
+    return {
+        totalProfiles: profiles.length,
+        runnableProfiles: profiles.filter((profile) => profile.isRunnable).length,
+        blockedProfiles: profiles.filter((profile) => profile.effectiveStatus === "blocked").length,
+        recoveringProfiles: profiles.filter((profile) => profile.effectiveStatus === "recovering").length,
+        warmingProfiles: profiles.filter((profile) => profile.effectiveStatus === "warming").length,
+        offlineProfiles: profiles.filter((profile) => profile.effectiveStatus === "offline").length,
+        archivedProfiles: profiles.filter((profile) => profile.effectiveStatus === "archived").length,
+        averageRisk: profiles.length > 0 ? Number((totalRisk / profiles.length).toFixed(2)) : 0,
+        captchaCount24h: profiles.reduce((sum, profile) => sum + profile.stats.captchaCount24h, 0),
+    };
+}
+
 export default function ScraperProfilesPage() {
     const [profiles, setProfiles] = useState<ScraperProfileListItem[]>([]);
     const [summary, setSummary] = useState<ScraperProfileSummary>(emptySummary);
@@ -44,14 +60,18 @@ export default function ScraperProfilesPage() {
     async function refreshDashboard() {
         setLoading(true);
         try {
-            const [profilesPayload, summaryPayload] = await Promise.all([
-                fetch("/api/admin/scraper-profiles", { cache: "no-store" }).then((response) =>
-                    parseApiResponse<{ profiles: ScraperProfileListItem[] }>(response),
-                ),
-                fetch("/api/admin/scraper-profiles/summary", { cache: "no-store" }).then((response) =>
+            const profilesPayload = await fetch("/api/admin/scraper-profiles", { cache: "no-store" }).then((response) =>
+                parseApiResponse<{ profiles: ScraperProfileListItem[] }>(response),
+            );
+
+            let summaryPayload = emptySummary;
+            try {
+                summaryPayload = await fetch("/api/admin/scraper-profiles/summary", { cache: "no-store" }).then((response) =>
                     parseApiResponse<ScraperProfileSummary>(response),
-                ),
-            ]);
+                );
+            } catch {
+                summaryPayload = deriveSummaryFromProfiles(profilesPayload.profiles);
+            }
 
             setProfiles(profilesPayload.profiles);
             setSummary(summaryPayload);

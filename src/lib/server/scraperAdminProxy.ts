@@ -23,7 +23,8 @@ export async function proxyScraperAdminRequest(request: Request, path = ''): Pro
         );
     }
 
-    const targetUrl = `${backendBaseUrl}/api/admin/scraper${path}`;
+    const requestUrl = new URL(request.url);
+    const targetUrl = `${backendBaseUrl}/api/admin/scraper${path}${requestUrl.search}`;
     const body = request.method === 'GET' || request.method === 'HEAD' ? undefined : await request.text();
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -41,6 +42,18 @@ export async function proxyScraperAdminRequest(request: Request, path = ''): Pro
     });
 
     const contentType = response.headers.get('content-type') || 'application/json';
+    if (!contentType.toLowerCase().includes('application/json')) {
+        const preview = (await response.text()).slice(0, 200);
+        return Response.json(
+            {
+                error: `Scraper admin proxy expected JSON from ${targetUrl} but received ${contentType}. Check INTERNAL_API_URL or NEXT_PUBLIC_API_URL on the frontend server.`,
+                preview,
+                targetUrl,
+            },
+            { status: response.status || 502 },
+        );
+    }
+
     return new Response(response.body, {
         status: response.status,
         headers: {
