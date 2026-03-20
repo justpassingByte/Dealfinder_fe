@@ -13,6 +13,12 @@ import ScraperWarmupPanel from "@/components/admin/ScraperWarmupPanel";
 import type { DevtoolsStatus, DevtoolsTarget, ScraperProfile, ScraperProfileDetailResponse } from "@/lib/scraperProfiles";
 
 async function parseApiResponse<T>(response: Response): Promise<T> {
+    const contentType = response.headers.get("content-type") || "application/json";
+    if (!contentType.toLowerCase().includes("application/json")) {
+        const preview = (await response.text()).slice(0, 160);
+        throw new Error(`Expected JSON but received ${contentType}. Preview: ${preview}`);
+    }
+
     const payload = await response.json();
     if (!response.ok) {
         throw new Error(payload.error || "Request failed.");
