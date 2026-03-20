@@ -49,7 +49,11 @@ interface PriceHistoryEntry {
 }
 
 const getApiUrl = () => {
-  let url = process.env.NEXT_PUBLIC_INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL;
+  // In production client-side, ALWAYS use relative path to leverage Next.js rewrites/proxy
+  if (typeof window !== "undefined" && process.env.NODE_ENV === "production") {
+    return "";
+  }
+  let url = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_INTERNAL_API_URL;
   if (!url) {
     if (process.env.NODE_ENV === "development") {
       url = "http://localhost:4000";

@@ -25,13 +25,15 @@ export const metadata: Metadata = {
 };
 
 const getApiUrl = () => {
+  // SSR (Server Side Rendering) context
   const url = process.env.NEXT_PUBLIC_INTERNAL_API_URL || process.env.DESTINATION_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   return url.replace(/\/api\/?$/, "").replace(/\/$/, "");
 };
 
 async function getInitialDeals(): Promise<HotDeal[]> {
   try {
-    const res = await fetch(`${getApiUrl()}/api/deals/hot`, { next: { revalidate: 300 } });
+    // Disable caching for Hot Deals to ensure fresh data
+    const res = await fetch(`${getApiUrl()}/api/deals/hot`, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
     return data.deals || [];
@@ -43,7 +45,8 @@ async function getInitialDeals(): Promise<HotDeal[]> {
 
 async function getInitialTrends(): Promise<string[]> {
   try {
-    const res = await fetch(`${getApiUrl()}/api/trends?limit=8`, { next: { revalidate: 3600 } });
+    // Disable caching for trends
+    const res = await fetch(`${getApiUrl()}/api/trends?limit=8`, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
     if (data.trends && data.trends.length > 0) return data.trends;

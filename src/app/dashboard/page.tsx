@@ -6,7 +6,10 @@ import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 
 const getApiUrl = () => {
-    let url = process.env.NEXT_PUBLIC_INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL;
+    if (typeof window !== "undefined" && process.env.NODE_ENV === "production") {
+        return "";
+    }
+    let url = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_INTERNAL_API_URL;
     if (!url) {
         if (process.env.NODE_ENV === "development") {
             url = "http://localhost:4000";

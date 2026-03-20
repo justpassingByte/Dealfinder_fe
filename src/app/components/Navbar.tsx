@@ -16,6 +16,9 @@ export default function Navbar() {
                 </Link>
 
                 <div className="nav-actions">
+                    <Link href="/admin/scraper-profiles" className="nav-link">
+                        Scraper Admin
+                    </Link>
                     {loading ? null : user ? (
                         <div className="nav-user">
                             <button
