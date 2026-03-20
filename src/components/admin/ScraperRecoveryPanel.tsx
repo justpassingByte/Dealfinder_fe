@@ -47,14 +47,14 @@ export default function ScraperRecoveryPanel({
 
     const statusMessage = useMemo(() => {
         if (!status) {
-            return "Check Debug Status after you open the SSH tunnel. This backend check confirms the worker debug endpoint is alive on the VPS, not whether your local tunnel process is still open.";
+            return "Check Debug Status after you open the SSH tunnel. The backend will try the configured worker endpoint first, then fall back to the host-mapped debug port for this profile.";
         }
 
         if (status.reachable) {
-            return `Debug endpoint reachable at ${status.debugHost}:${status.debugPort}. ${status.targetCount} visible target(s) found on the worker. If your SSH tunnel is running, local Inspect links should now work on 127.0.0.1:${status.localTunnelPort}.`;
+            return `Backend reached DevTools at ${status.debugHost}:${status.debugPort}. ${status.targetCount} visible target(s) found. If your SSH tunnel is running, local Inspect links should now work on 127.0.0.1:${status.localTunnelPort}.`;
         }
 
-        return `Debug endpoint is not reachable at ${status.debugHost}:${status.debugPort}. ${status.error || "Check worker health, assigned port, and container networking before refreshing targets."}`;
+        return status.error || "Backend could not reach any DevTools endpoint for this profile. Check worker health and host port mapping before refreshing targets.";
     }, [status]);
 
     return (
