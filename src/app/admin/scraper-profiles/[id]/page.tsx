@@ -256,18 +256,18 @@ export default function ScraperProfileDetailPage() {
                             <strong>2. VPS setup:</strong> run the setup commands below to create the folder and restart the worker.
                         </div>
                         <div className="admin-checklist-step">
-                            <strong>3. Existing logged-in session:</strong> if this profile already works on the VPS, jump to Warmup and trigger it manually.
+                            <strong>3. Existing logged-in session:</strong> if this profile already works on the VPS, use Recovery only when you need manual inspection or CAPTCHA solve.
                         </div>
                         <div className="admin-checklist-step">
-                            <strong>4. Needs login or CAPTCHA solve:</strong> use the Recovery section, then come back and run Warmup manually.
+                            <strong>4. Needs login or CAPTCHA solve:</strong> use the Recovery section. Finishing recovery is what makes the profile active again.
                         </div>
                     </div>
                     <div className="admin-inline-note">
-                        <strong>Important:</strong> profiles in <code>pending_setup</code>, <code>warming</code>, or <code>recovering</code> do not carry normal search traffic yet. Finish the flow here first.
+                        <strong>Important:</strong> profiles in <code>pending_setup</code>, <code>warming</code>, or <code>recovering</code> do not carry normal search traffic yet. Finishing recovery moves the profile back to <code>active</code>.
                     </div>
                     <div className="admin-action-row">
-                        <a className="btn-secondary" href="#warmup">Go To Warmup</a>
                         <a className="btn-secondary" href="#recovery">Go To Recovery</a>
+                        <a className="btn-secondary" href="#warmup">Optional Warmup</a>
                     </div>
                 </section>
 

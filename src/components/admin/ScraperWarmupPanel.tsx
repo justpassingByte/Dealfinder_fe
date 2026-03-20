@@ -24,7 +24,7 @@ export default function ScraperWarmupPanel({ profile, actionBusy = false, onStar
             <div className="admin-card-header">
                 <div>
                     <h3>Warmup</h3>
-                    <p className="text-muted">Trigger warmup manually from here. Use this for imported VPS sessions or after you finish a recovery session.</p>
+                    <p className="text-muted">Optional maintenance flow. This is not required to finish recovery or move a profile back to active.</p>
                 </div>
             </div>
 
@@ -33,10 +33,10 @@ export default function ScraperWarmupPanel({ profile, actionBusy = false, onStar
                     <strong>1. Pick a safe query:</strong> use a common keyword that should return normal search results.
                 </div>
                 <div className="admin-checklist-step">
-                    <strong>2. Start Warmup manually:</strong> imported profiles stay non-runnable until you do this.
+                    <strong>2. Optional maintenance:</strong> use this when you want the worker to browse a few products/searches for human-like activity later.
                 </div>
                 <div className="admin-checklist-step">
-                    <strong>3. Promotion rule:</strong> the profile needs two successful warmup runs before it should be trusted as active traffic again.
+                    <strong>3. Activation rule:</strong> recovery itself is the path back to <code>active</code>. This panel is separate from that flow.
                 </div>
             </div>
 

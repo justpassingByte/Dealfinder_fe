@@ -62,7 +62,7 @@ export default function ScraperRecoveryPanel({
             <div className="admin-card-header">
                 <div>
                     <h3>Recovery</h3>
-                    <p className="text-muted">Start recovery, run the SSH tunnel command in your terminal, refresh targets, inspect, then finish recovery. Warmup is a separate manual step below.</p>
+                    <p className="text-muted">Start recovery, run the SSH tunnel command in your terminal, refresh targets, inspect, then finish recovery. Finishing recovery marks the profile active again.</p>
                 </div>
             </div>
 
@@ -83,7 +83,7 @@ export default function ScraperRecoveryPanel({
                     <strong>5. Inspect locally:</strong> the Inspect button opens <code>127.0.0.1:{tunnelPort}</code> in a new tab on your machine.
                 </div>
                 <div className="admin-checklist-step">
-                    <strong>6. Finish Recovery:</strong> once CAPTCHA/login is solved, finish here and then trigger Warmup manually.
+                    <strong>6. Finish Recovery:</strong> once CAPTCHA/login is solved and you have manually warmed the session enough, finish here to move the profile back to <code>active</code>.
                 </div>
             </div>
 
