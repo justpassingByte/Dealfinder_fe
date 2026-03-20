@@ -130,7 +130,7 @@ export default function ScraperRecoveryPanel({
             </div>
 
             <div className="admin-action-row">
-                <button className="btn-secondary" disabled={!status?.reachable || loadingTargets} onClick={() => void onRefreshTargets()} type="button">
+                <button className="btn-secondary" disabled={loadingTargets || actionBusy} onClick={() => void onRefreshTargets()} type="button">
                     {loadingTargets ? "Refreshing..." : "4. Refresh Targets"}
                 </button>
                 <a className="btn-secondary" href={localDevtoolsHome} rel="noreferrer" target="_blank">
