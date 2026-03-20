@@ -66,13 +66,13 @@ export default function ScraperProfilesPage() {
     async function refreshDashboard() {
         setLoading(true);
         try {
-            const profilesPayload = await fetch("/api/admin/scraper-profiles", { cache: "no-store" }).then((response) =>
+            const profilesPayload = await fetch("/internal-api/admin/scraper-profiles", { cache: "no-store" }).then((response) =>
                 parseApiResponse<{ profiles: ScraperProfileListItem[] }>(response),
             );
 
             let summaryPayload = emptySummary;
             try {
-                summaryPayload = await fetch("/api/admin/scraper-profiles/summary", { cache: "no-store" }).then((response) =>
+                summaryPayload = await fetch("/internal-api/admin/scraper-profiles/summary", { cache: "no-store" }).then((response) =>
                     parseApiResponse<ScraperProfileSummary>(response),
                 );
             } catch {
@@ -96,7 +96,7 @@ export default function ScraperProfilesPage() {
     async function submitProfile(payload: ScraperProfileFormPayload) {
         setSubmitting(true);
         try {
-            const created = await fetch("/api/admin/scraper-profiles", {
+            const created = await fetch("/internal-api/admin/scraper-profiles", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),

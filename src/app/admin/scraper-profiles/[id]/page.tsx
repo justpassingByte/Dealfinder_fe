@@ -54,7 +54,7 @@ export default function ScraperProfileDetailPage() {
     async function refreshDetail() {
         setLoading(true);
         try {
-            const nextDetail = await fetch(`/api/admin/scraper-profiles/${profileId}`, { cache: "no-store" }).then((response) =>
+            const nextDetail = await fetch(`/internal-api/admin/scraper-profiles/${profileId}`, { cache: "no-store" }).then((response) =>
                 parseApiResponse<ScraperProfileDetailResponse>(response),
             );
             setDetail(nextDetail);
@@ -90,7 +90,7 @@ export default function ScraperProfileDetailPage() {
     async function runProfileAction(path: string, body?: Record<string, unknown>) {
         setBusyAction(path);
         try {
-            const response = await fetch(`/api/admin/scraper-profiles/${profileId}${path}`, {
+            const response = await fetch(`/internal-api/admin/scraper-profiles/${profileId}${path}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: body ? JSON.stringify(body) : undefined,
@@ -119,7 +119,7 @@ export default function ScraperProfileDetailPage() {
     async function refreshTargets() {
         setTargetsLoading(true);
         try {
-            const payload = await fetch(`/api/admin/scraper-profiles/${profileId}/devtools/targets`, { cache: "no-store" }).then((response) =>
+            const payload = await fetch(`/internal-api/admin/scraper-profiles/${profileId}/devtools/targets`, { cache: "no-store" }).then((response) =>
                 parseApiResponse<{ targets: DevtoolsTarget[] }>(response),
             );
             setTargets(payload.targets);
@@ -134,7 +134,7 @@ export default function ScraperProfileDetailPage() {
     async function checkDebugStatus() {
         setDebugStatusLoading(true);
         try {
-            const payload = await fetch(`/api/admin/scraper-profiles/${profileId}/devtools/status`, { cache: "no-store" }).then((response) =>
+            const payload = await fetch(`/internal-api/admin/scraper-profiles/${profileId}/devtools/status`, { cache: "no-store" }).then((response) =>
                 parseApiResponse<{ status: DevtoolsStatus }>(response),
             );
             setDebugStatus(payload.status);
@@ -149,7 +149,7 @@ export default function ScraperProfileDetailPage() {
     async function saveEdit(payload: ScraperProfileFormPayload) {
         setBusyAction("edit");
         try {
-            await fetch(`/api/admin/scraper-profiles/${profileId}`, {
+            await fetch(`/internal-api/admin/scraper-profiles/${profileId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
