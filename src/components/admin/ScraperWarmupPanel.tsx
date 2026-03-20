@@ -20,11 +20,23 @@ export default function ScraperWarmupPanel({ profile, actionBusy = false, onStar
     const [warmupQuery, setWarmupQuery] = useState(initialQuery);
 
     return (
-        <section className="admin-card">
+        <section className="admin-card" id="warmup">
             <div className="admin-card-header">
                 <div>
                     <h3>Warmup</h3>
-                    <p className="text-muted">Use this to re-run the low-risk warmup cycle or manually reset risk after investigation.</p>
+                    <p className="text-muted">Trigger warmup manually from here. Use this for imported VPS sessions or after you finish a recovery session.</p>
+                </div>
+            </div>
+
+            <div className="admin-checklist admin-checklist-compact">
+                <div className="admin-checklist-step">
+                    <strong>1. Pick a safe query:</strong> use a common keyword that should return normal search results.
+                </div>
+                <div className="admin-checklist-step">
+                    <strong>2. Start Warmup manually:</strong> imported profiles stay non-runnable until you do this.
+                </div>
+                <div className="admin-checklist-step">
+                    <strong>3. Promotion rule:</strong> the profile needs two successful warmup runs before it should be trusted as active traffic again.
                 </div>
             </div>
 

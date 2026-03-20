@@ -23,6 +23,17 @@ export interface DevtoolsTarget {
     localInspectorUrl: string;
 }
 
+export interface DevtoolsStatus {
+    reachable: boolean;
+    checkedAt: string;
+    debugHost: string;
+    debugPort: number;
+    localTunnelPort: number;
+    targetCount: number;
+    recommendedTargetId: string | null;
+    error: string | null;
+}
+
 export interface ScraperProfile {
     id: string;
     displayName: string;
@@ -104,6 +115,6 @@ export interface ScraperProfileDetailResponse {
     commandGuides: {
         add: ScraperCommandStep[];
         recovery: ScraperCommandStep[];
-        archive: ScraperCommandStep[];
+        cleanup: ScraperCommandStep[];
     };
 }

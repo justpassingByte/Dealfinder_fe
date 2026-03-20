@@ -1144,6 +1144,29 @@ a {
   gap: 14px;
 }
 
+.admin-checklist {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.admin-checklist-compact {
+  margin-top: 0;
+}
+
+.admin-checklist-step {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.admin-checklist-step code {
+  color: var(--text-primary);
+}
+
 .command-guide-step {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);

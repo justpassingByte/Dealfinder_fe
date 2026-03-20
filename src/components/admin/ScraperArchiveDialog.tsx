@@ -6,18 +6,18 @@ import { ScraperProfile } from "@/lib/scraperProfiles";
 interface Props {
     profile: ScraperProfile;
     actionBusy?: boolean;
-    onArchive: () => Promise<void> | void;
+    onDelete: () => Promise<void> | void;
 }
 
-export default function ScraperArchiveDialog({ profile, actionBusy = false, onArchive }: Props) {
+export default function ScraperArchiveDialog({ profile, actionBusy = false, onDelete }: Props) {
     const [confirmed, setConfirmed] = useState(false);
 
     return (
-        <section className="admin-card admin-card-danger">
+        <section className="admin-card admin-card-danger" id="delete">
             <div className="admin-card-header">
                 <div>
                     <h3>Delete Profile</h3>
-                    <p className="text-muted">Delete is archive-only in v1. The database record is hidden from the main list, but you still need to use the cleanup command for the VPS folder.</p>
+                    <p className="text-muted">This permanently deletes the profile record from the app. It does not delete the VPS folder for you.</p>
                 </div>
             </div>
 
@@ -29,16 +29,16 @@ export default function ScraperArchiveDialog({ profile, actionBusy = false, onAr
 
             <label className="admin-checkbox">
                 <input checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} type="checkbox" />
-                <span>I understand this archives the profile record and requires separate VPS cleanup.</span>
+                <span>I already reviewed the VPS cleanup commands above. This button only deletes the app record; it does not remove the real browser folder for me.</span>
             </label>
 
             <button
                 className="btn-danger"
                 disabled={!confirmed || actionBusy}
-                onClick={() => void onArchive()}
+                onClick={() => void onDelete()}
                 type="button"
             >
-                {actionBusy ? "Archiving..." : "Archive Profile"}
+                {actionBusy ? "Deleting..." : "Delete Profile"}
             </button>
         </section>
     );

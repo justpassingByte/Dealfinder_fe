@@ -5,10 +5,6 @@ import { ScraperProfileListItem } from "@/lib/scraperProfiles";
 
 interface Props {
     profiles: ScraperProfileListItem[];
-    onRecover: (profile: ScraperProfileListItem) => void;
-    onWarm: (profile: ScraperProfileListItem) => void;
-    onEdit: (profile: ScraperProfileListItem) => void;
-    onArchive: (profile: ScraperProfileListItem) => void;
 }
 
 function formatDate(value: string | null): string {
@@ -22,7 +18,7 @@ function statusClass(status: string): string {
     return `admin-status admin-status-${status}`;
 }
 
-export default function ScraperProfileTable({ profiles, onRecover, onWarm, onEdit, onArchive }: Props) {
+export default function ScraperProfileTable({ profiles }: Props) {
     return (
         <section className="admin-card">
             <div className="admin-card-header">
@@ -70,18 +66,18 @@ export default function ScraperProfileTable({ profiles, onRecover, onWarm, onEdi
                                         <Link className="btn-secondary btn-sm" href={`/admin/scraper-profiles/${profile.id}`}>
                                             View
                                         </Link>
-                                        <button className="btn-secondary btn-sm" onClick={() => onRecover(profile)} type="button">
+                                        <Link className="btn-secondary btn-sm" href={`/admin/scraper-profiles/${profile.id}#recovery`}>
                                             Recover
-                                        </button>
-                                        <button className="btn-secondary btn-sm" onClick={() => onWarm(profile)} type="button">
+                                        </Link>
+                                        <Link className="btn-secondary btn-sm" href={`/admin/scraper-profiles/${profile.id}#warmup`}>
                                             Warm
-                                        </button>
-                                        <button className="btn-secondary btn-sm" onClick={() => onEdit(profile)} type="button">
+                                        </Link>
+                                        <Link className="btn-secondary btn-sm" href={`/admin/scraper-profiles/${profile.id}#edit`}>
                                             Edit
-                                        </button>
-                                        <button className="btn-danger btn-sm" onClick={() => onArchive(profile)} type="button">
+                                        </Link>
+                                        <Link className="btn-danger btn-sm" href={`/admin/scraper-profiles/${profile.id}#delete`}>
                                             Delete
-                                        </button>
+                                        </Link>
                                     </div>
                                 </td>
                             </tr>

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import HomePageClient, { HotDeal } from './HomePageClient';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'SmartDeal - Tìm Sản Phẩm Tốt Nhất, Cập Nhật Giá Theo Thời Gian Thực',
   description: 'SmartDeal - Công cụ so sánh giá, tìm kiếm sản phẩm bán chạy và giá hời từ Shopee, Lazada. Phân tích giá và sự kiện giảm giá chuẩn xác.',
