@@ -360,10 +360,10 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
   return (
     <div className={`flex flex-col bg-[#F3F4F6] text-slate-900 font-sans selection:bg-teal-100 min-h-screen`}>
       {/* Navbar - Restyled exactly like layout */}
-      <header className="sticky top-0 z-50 bg-[#F3F4F6] border-b border-slate-200 h-[120px] flex flex-col justify-center shrink-0">
+      <header className="sticky top-0 z-50 bg-[#F3F4F6] border-b border-slate-200 h-[80px] md:h-[100px] flex flex-col justify-center shrink-0">
         <div className="w-full max-w-7xl mx-auto px-6 flex items-center justify-between h-full">
           <div
-            className="flex items-center gap-2 cursor-pointer relative h-full py-4"
+            className="flex items-center gap-2 cursor-pointer relative h-full py-2"
             onClick={() => {
               setHasSearched(false);
               setUrl("");
@@ -374,7 +374,7 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
               alt="SmartDeal"
               width={340}
               height={185}
-              className="h-24 md:h-28 w-auto object-contain"
+              className="h-16 md:h-20 w-auto object-contain"
               priority
             />
           </div>
@@ -426,19 +426,19 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
 
       {/* Main Container */}
       <main className="flex-1 flex flex-col">
-        <section className={`transition-all duration-700 ${hasSearched ? "py-10" : "flex-1 flex flex-col items-center justify-center py-20"}`}>
+        <section className={`transition-all duration-700 ${hasSearched ? "py-4" : "flex-1 flex flex-col items-center justify-center py-4 md:py-8"}`}>
           <div className="w-full max-w-4xl mx-auto px-6 text-center">
             {!hasSearched && (
-              <div className="mb-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                <div className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 px-4 py-2 rounded-full text-xs font-bold mb-6 tracking-wide shadow-sm border border-teal-100">
-                  <span className="flex h-2 w-2 rounded-full bg-teal-500 animate-pulse"></span>
+              <div className="mb-4 md:mb-6 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                <div className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 px-3 py-1.5 rounded-full text-[11px] font-bold mb-3 md:mb-4 tracking-wide shadow-sm border border-teal-100">
+                  <span className="flex h-1.5 w-1.5 rounded-full bg-teal-500 animate-pulse"></span>
                   CẬP NHẬT GIÁ THEO THỜI GIAN THỰC
                 </div>
-                <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-6 tracking-tight leading-[1.1]">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 mb-2 md:mb-4 tracking-tight leading-[1.1]">
                   Tìm Sản Phẩm <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-teal-400">Tốt Nhất</span> <br />
                   Tiết Kiệm Nhất
                 </h1>
-                <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed">
+                <p className="text-slate-500 text-sm md:text-base max-w-2xl mx-auto font-medium leading-relaxed">
                   Dán link hoặc nhập tên sản phẩm để chúng tôi giúp bạn lọc ra những lựa chọn chất lượng nhất với giá hời nhất từ các shop uy tín.
                 </p>
               </div>
@@ -455,7 +455,7 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
                 <input
                   type="text"
                   placeholder="Dán link sản phẩm hoặc nhập tên sản phẩm..."
-                  className="w-full pl-12 md:pl-16 pr-4 md:pr-6 py-4 md:py-6 bg-transparent text-lg md:text-xl font-medium outline-none placeholder:text-slate-300 transition-all text-slate-800"
+                  className="w-full pl-12 md:pl-16 pr-4 md:pr-6 py-3 md:py-4 bg-transparent text-lg md:text-xl font-medium outline-none placeholder:text-slate-300 transition-all text-slate-800"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   onFocus={() => setFocusedInput("main")}
@@ -484,7 +484,7 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
                 </div>
               )}
 
-              <div className="pt-8 flex flex-col items-center gap-5">
+              <div className="pt-4 flex flex-col items-center gap-4">
                 <button
                   type="submit"
                   disabled={loading || !url.trim()}
@@ -532,7 +532,7 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
               </div>
             </form>
 
-            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mt-8 text-xs font-medium text-slate-500">
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mt-4 text-xs font-medium text-slate-500">
               <div className="flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5 text-teal-500" />
                 Được tin dùng bởi 50k+ người
@@ -553,8 +553,8 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
 
         {/* --- HOT DEALS SECTION --- */}
         {!hasSearched && (
-          <div className="w-full max-w-7xl mx-auto px-6 mb-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <div className="flex items-center justify-between mb-8">
+          <div className="w-full max-w-7xl mx-auto px-6 mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-black text-[#0f172a] flex items-center gap-2">
                 <Flame className="w-6 h-6 text-orange-500 fill-orange-500" /> Deal Hot Trong Ngày
               </h2>
