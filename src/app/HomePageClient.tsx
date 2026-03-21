@@ -153,15 +153,20 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
 
   const [catalogProduct, setCatalogProduct] = useState<any>(null);
   const [dataSource, setDataSource] = useState<string>("");
+  const [forceLiveRefresh, setForceLiveRefresh] = useState(false);
 
-  const fetchResults = useCallback(async (q: string) => {
+  const fetchResults = useCallback(async (q: string, forceRefresh = false) => {
     try {
-      setSearchStatus("Đang truy xuất từ danh mục sản phẩm...");
+      setSearchStatus(forceRefresh ? "Đang ép worker làm mới trực tiếp..." : "Đang truy xuất từ danh mục sản phẩm...");
       // 1. Search (using catalog-powered endpoint)
-      const searchRes = await fetch(`${API}/api/search/catalog?q=${encodeURIComponent(q)}`);
+      const params = new URLSearchParams({ q });
+      if (forceRefresh) {
+        params.set("refresh", "true");
+      }
+      const searchRes = await fetch(`${API}/api/search/catalog?${params.toString()}`);
 
       if (searchRes.status === 202) {
-        setTimeout(() => fetchResults(q), 2000);
+        setTimeout(() => fetchResults(q, forceRefresh), 2000);
         return;
       }
 
@@ -277,7 +282,7 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
           return;
         }
 
-        await fetchResults(data.query);
+        await fetchResults(data.query, forceLiveRefresh);
       } catch {
         alert("Network error. Make sure the API server is running.");
         setLoading(false);
@@ -285,7 +290,7 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
       }
     } else {
       // Keyword flow: send directly to catalog search (URL detection is also done server-side)
-      await fetchResults(input);
+      await fetchResults(input, forceLiveRefresh);
     }
   }
 
@@ -497,6 +502,23 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
                     </>
                   )}
                 </button>
+
+                <label className="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-left shadow-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={forceLiveRefresh}
+                    onChange={(e) => setForceLiveRefresh(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  <span className="flex flex-col">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-700">
+                      Force Live Refresh
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-medium">
+                      Bỏ qua cache/DB để ép worker chạy API-first, tiện cho inspect.
+                    </span>
+                  </span>
+                </label>
 
                 <div className="flex items-center gap-6 text-[11px] text-slate-400 font-medium uppercase tracking-widest animate-fade-in">
                   <div className="flex items-center gap-1.5">
