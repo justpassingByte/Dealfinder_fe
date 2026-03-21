@@ -484,51 +484,49 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
                 </div>
               )}
 
-              <div className="pt-8 flex flex-col items-center gap-4">
+              <div className="pt-8 flex flex-col items-center gap-5">
                 <button
                   type="submit"
                   disabled={loading || !url.trim()}
-                  className="min-w-[240px] bg-[#0f172a] hover:bg-teal-600 text-white py-3.5 px-10 rounded-xl flex items-center justify-center gap-3 text-base font-bold transition-all hover:shadow-xl active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg group"
+                  className="w-[280px] sm:w-[320px] bg-gradient-to-r from-teal-600 to-teal-400 hover:from-teal-500 hover:to-teal-400 text-white py-4 px-8 rounded-2xl flex items-center justify-center gap-3 text-lg font-black transition-all hover:shadow-[0_10px_40px_-10px_rgba(20,184,166,0.6)] active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl group border border-teal-500/20"
                 >
                   {loading ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span className="text-sm">{searchStatus || "Đang xử lý..."}</span>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="text-base">{searchStatus || "Đang xử lý..."}</span>
                     </>
                   ) : (
                     <>
-                      <Zap className="w-4 h-4 fill-white" />
-                      Tìm Giá Tốt Nhất
+                      <Search className="w-5 h-5 stroke-[2.5]" />
+                      TÌM GIÁ TỐT NHẤT
                     </>
                   )}
                 </button>
 
-                <label className="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-left shadow-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={forceLiveRefresh}
-                    onChange={(e) => setForceLiveRefresh(e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
-                  />
-                  <span className="flex flex-col">
-                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-700">
-                      Force Live Refresh
-                    </span>
-                    <span className="text-[11px] text-slate-500 font-medium">
-                      Bỏ qua cache/DB để ép worker chạy API-first, tiện cho inspect.
-                    </span>
-                  </span>
-                </label>
+                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 mt-2">
+                  <label className="flex items-center gap-4 bg-white border border-slate-200 py-3 px-6 rounded-2xl cursor-pointer hover:bg-teal-50 hover:border-teal-200 transition-all group shadow-sm w-full sm:w-auto">
+                    <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 shrink-0 ${forceLiveRefresh ? 'bg-teal-500' : 'bg-slate-300 group-hover:bg-slate-400'}`}>
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={forceLiveRefresh}
+                        onChange={(e) => setForceLiveRefresh(e.target.checked)}
+                      />
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 shadow-[0_1px_2px_rgba(0,0,0,0.1)] ${forceLiveRefresh ? 'translate-x-[22px]' : 'translate-x-[4px]'}`} />
+                    </div>
+                    <div className="flex flex-col text-left">
+                      <span className={`text-xs font-black uppercase tracking-widest transition-colors duration-300 ${forceLiveRefresh ? 'text-teal-700' : 'text-slate-800'}`}>
+                        CẬP NHẬT GIÁ MỚI NHẤT
+                      </span>
+                      <span className="text-[11px] text-slate-500 font-medium mt-0.5 leading-snug max-w-[280px]">
+                        Lệnh cho AI vào thẳng Shopee kiểm tra giá và deal chính xác nhất ngay lúc này.
+                      </span>
+                    </div>
+                  </label>
 
-                <div className="flex items-center gap-6 text-[11px] text-slate-400 font-medium uppercase tracking-widest animate-fade-in">
-                  <div className="flex items-center gap-1.5">
-                    <Check className="w-3 h-3 text-teal-500" /> MIỄN PHÍ
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Check className="w-3 h-3 text-teal-500" /> CHÍNH XÁC
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Check className="w-3 h-3 text-teal-500" /> BẢO MẬT
+                  <div className="hidden sm:flex items-center gap-5 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                    <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-teal-500" /> MIỄN PHÍ</div>
+                    <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-teal-500" /> CHÍNH XÁC</div>
                   </div>
                 </div>
               </div>
