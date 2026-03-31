@@ -321,35 +321,12 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
   };
 
   const fetchHotDeals = useCallback(async () => {
-    setLoadingHotDeals(true);
-    try {
-      const res = await fetch(`${API}/api/deals/hot`);
-      if (res.ok) {
-        const data = await res.json();
-        setHotDeals(data.deals || []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch hot deals:", err);
-    } finally {
-      setLoadingHotDeals(false);
-    }
+    // API temporarily disabled
+    setLoadingHotDeals(false);
   }, []);
 
   const fetchTrends = useCallback(async () => {
-    try {
-      const res = await fetch(`${API}/api/trends?limit=8`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.trends && data.trends.length > 0) {
-          setTrends(data.trends);
-        } else {
-          // Fallback if DB is empty
-          setTrends(['nồi cơm điện', 'tai nghe bluetooth', 'giày sneaker nam', 'sạc dự phòng', 'bình giữ nhiệt']);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to fetch trends:", err);
-    }
+    // API temporarily disabled
   }, []);
 
   useEffect(() => {
@@ -379,180 +356,118 @@ export default function HomePage({ initialHotDeals = [], initialTrends = [] }: {
             />
           </div>
 
-          <div className="flex-1 max-w-lg mx-6 hidden md:block">
-            <form
-              onSubmit={(e) => {
-                const input = e.currentTarget.querySelector("input") as HTMLInputElement;
-                handleSubmit(e, input.value);
-              }}
-              className="relative"
-            >
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Tìm sản phẩm (tên hoặc link)..."
-                className="w-full pl-9 pr-4 py-1.5 bg-[#e2e8f0] border-none rounded-md text-sm focus:ring-2 focus:ring-[#0f172a] outline-none placeholder:text-slate-500"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                onFocus={() => setFocusedInput("header")}
-                onBlur={() => setTimeout(() => setFocusedInput(null), 200)}
-              />
-              {focusedInput === "header" && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-[100] animate-in slide-in-from-top-2">
-                  {suggestions.map((suggestion, idx) => (
-                    <div
-                      key={idx}
-                      className="px-4 py-3 hover:bg-teal-50 flex items-center gap-3 cursor-pointer border-b border-slate-50 last:border-0"
-                      onClick={() => {
-                        setUrl(suggestion);
-                        handleSubmit({ preventDefault: () => { } } as any, suggestion);
-                        setFocusedInput(null);
-                      }}
-                    >
-                      <Search className="w-3 h-3 text-slate-400" />
-                      <span className="text-sm text-slate-700 font-medium text-left">{suggestion}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </form>
-          </div>
-
           <div className="flex items-center gap-4">
-            {/* Auth buttons removed */}
+            {/* Search hidden until backend ready */}
           </div>
         </div>
       </header>
 
       {/* Main Container */}
       <main className="flex-1 flex flex-col">
-        <section className={`transition-all duration-700 ${hasSearched ? "py-4" : "flex-1 flex flex-col items-center justify-center py-4 md:py-8"}`}>
-          <div className="w-full max-w-4xl mx-auto px-6 text-center">
-            {!hasSearched && (
-              <div className="mb-4 md:mb-6 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                <div className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 px-3 py-1.5 rounded-full text-[11px] font-bold mb-3 md:mb-4 tracking-wide shadow-sm border border-teal-100">
-                  <span className="flex h-1.5 w-1.5 rounded-full bg-teal-500 animate-pulse"></span>
-                  CẬP NHẬT GIÁ THEO THỜI GIAN THỰC
-                </div>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 mb-2 md:mb-4 tracking-tight leading-[1.1]">
-                  Tìm Sản Phẩm <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-teal-400">Tốt Nhất</span> <br />
-                  Tiết Kiệm Nhất
-                </h1>
-                <p className="text-slate-500 text-sm md:text-base max-w-2xl mx-auto font-medium leading-relaxed">
-                  Dán link hoặc nhập tên sản phẩm để chúng tôi giúp bạn lọc ra những lựa chọn chất lượng nhất với giá hời nhất từ các shop uy tín.
-                </p>
+        {/* === DEALSNIPER EXTENSION HERO === */}
+        <section className="flex-1 flex flex-col items-center justify-center py-12 md:py-20">
+          <div className="w-full max-w-6xl mx-auto px-6">
+            {/* Hero */}
+            <div className="text-center mb-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+              <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-600 px-4 py-2 rounded-full text-[11px] font-bold mb-5 tracking-wider border border-orange-100 shadow-sm">
+                <span className="flex h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse"></span>
+                CHROME EXTENSION · MIỄN PHÍ · KHÔNG CẦN TÀI KHOẢN
               </div>
-            )}
-
-            <form
-              onSubmit={handleSubmit}
-              className={`relative bg-white p-2 rounded-3xl shadow-[0_20px_70px_-10px_rgba(0,0,0,0.1)] transition-all duration-500 ${hasSearched ? "scale-95" : "scale-100"}`}
-            >
-              <div className="relative flex items-center">
-                <div className="absolute left-4 md:left-6 text-slate-400">
-                  <Search className="w-5 h-5 md:w-6 h-6" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Dán link sản phẩm hoặc nhập tên sản phẩm..."
-                  className="w-full pl-12 md:pl-16 pr-4 md:pr-6 py-3 md:py-4 bg-transparent text-lg md:text-xl font-medium outline-none placeholder:text-slate-300 transition-all text-slate-800"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  onFocus={() => setFocusedInput("main")}
-                  onBlur={() => setTimeout(() => setFocusedInput(null), 200)}
-                  disabled={loading}
-                  required
-                />
-              </div>
-
-              {focusedInput === "main" && suggestions.length > 0 && (
-                <div className="absolute top-[80px] left-0 right-0 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden z-[100] animate-in slide-in-from-top-2 text-left">
-                  {suggestions.map((suggestion, idx) => (
-                    <div
-                      key={idx}
-                      className="px-6 py-4 hover:bg-teal-50 flex items-center gap-3 cursor-pointer border-b border-slate-50 last:border-0"
-                      onClick={() => {
-                        setUrl(suggestion);
-                        handleSubmit({ preventDefault: () => { } } as any, suggestion);
-                        setFocusedInput(null);
-                      }}
-                    >
-                      <Search className="w-5 h-5 text-slate-400" />
-                      <span className="text-lg text-slate-700 font-medium">{suggestion}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="pt-4 flex flex-col items-center gap-4">
-                <button
-                  type="submit"
-                  disabled={loading || !url.trim()}
-                  className="w-[280px] sm:w-[320px] bg-gradient-to-r from-teal-600 to-teal-400 hover:from-teal-500 hover:to-teal-400 text-white py-4 px-8 rounded-2xl flex items-center justify-center gap-3 text-lg font-black transition-all hover:shadow-[0_10px_40px_-10px_rgba(20,184,166,0.6)] active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl group border border-teal-500/20"
+              <h1 className="text-4xl md:text-6xl font-black text-slate-900 mb-5 tracking-tight leading-[1.1]">
+                Săn Deal Ngon <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-400">Trên Shopee</span>
+              </h1>
+              <p className="text-slate-500 text-base md:text-lg max-w-2xl mx-auto font-medium leading-relaxed mb-8">
+                DealSniper tự động lọc deal ảo, xếp hạng thông minh theo giá và chất lượng — ngay trên trang Shopee, không cần rời tab.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a
+                  href="/DealSniper_v1.0.0.zip"
+                  download
+                  className="inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-400 hover:to-orange-300 text-white py-4 px-8 rounded-2xl font-black text-base transition-all shadow-xl hover:shadow-orange-200 active:scale-95 group"
                 >
-                  {loading ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span className="text-base">{searchStatus || "Đang xử lý..."}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-5 h-5 stroke-[2.5]" />
-                      TÌM GIÁ TỐT NHẤT
-                    </>
-                  )}
-                </button>
+                  <Download className="w-5 h-5 group-hover:animate-bounce" />
+                  TẢI DEALSNIPER MIỄN PHÍ
+                </a>
+                <a
+                  href="https://chrome.google.com/webstore"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-white border-2 border-slate-200 hover:border-orange-300 text-slate-700 py-4 px-6 rounded-2xl font-bold text-sm transition-all hover:shadow-md active:scale-95"
+                >
+                  <Chrome className="w-4 h-4 text-orange-500" />
+                  Sắp có trên Chrome Store
+                </a>
+              </div>
+            </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 mt-2">
-                  <label className="flex items-center gap-4 bg-white border border-slate-200 py-3 px-6 rounded-2xl cursor-pointer hover:bg-teal-50 hover:border-teal-200 transition-all group shadow-sm w-full sm:w-auto">
-                    <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 shrink-0 ${forceLiveRefresh ? 'bg-teal-500' : 'bg-slate-300 group-hover:bg-slate-400'}`}>
-                      <input
-                        type="checkbox"
-                        className="sr-only"
-                        checked={forceLiveRefresh}
-                        onChange={(e) => setForceLiveRefresh(e.target.checked)}
-                      />
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 shadow-[0_1px_2px_rgba(0,0,0,0.1)] ${forceLiveRefresh ? 'translate-x-[22px]' : 'translate-x-[4px]'}`} />
-                    </div>
-                    <div className="flex flex-col text-left">
-                      <span className={`text-xs font-black uppercase tracking-widest transition-colors duration-300 ${forceLiveRefresh ? 'text-teal-700' : 'text-slate-800'}`}>
-                        CẬP NHẬT GIÁ MỚI NHẤT
-                      </span>
-                      <span className="text-[11px] text-slate-500 font-medium mt-0.5 leading-snug max-w-[280px]">
-                        Lệnh cho AI vào thẳng Shopee kiểm tra giá và deal chính xác nhất ngay lúc này.
-                      </span>
-                    </div>
-                  </label>
+            {/* Screenshot */}
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-slate-200 mb-16 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200">
+              <Image
+                src="/dealsniper-screenshot.png"
+                alt="DealSniper extension in action"
+                width={1280}
+                height={800}
+                className="w-full h-auto object-cover"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+            </div>
 
-                  <div className="hidden sm:flex items-center gap-5 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                    <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-teal-500" /> MIỄN PHÍ</div>
-                    <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-teal-500" /> CHÍNH XÁC</div>
-                  </div>
+            {/* Features Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 animate-in fade-in duration-1000 delay-300">
+              {[
+                { icon: "🛡️", title: "Chống Deal Ảo", desc: "Tự động loại bỏ phụ kiện, hàng nhái, model sai và quảng cáo nhiễu loạn ra khỏi kết quả tìm kiếm." },
+                { icon: "⚡", title: "Xếp Hạng Tức Thì", desc: "Phân tích và xếp hạng tất cả người bán theo giá, rating, tốc độ giao hàng và số lượng tồn kho." },
+                { icon: "📦", title: "Thông Tin Đầy Đủ", desc: "Hiển thị chi tiết: kho hàng, thời gian giao, tên shop và số phiên bản trực tiếp trên bảng kết quả." },
+              ].map((f) => (
+                <div key={f.title} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-orange-200 transition-all group">
+                  <div className="text-3xl mb-3">{f.icon}</div>
+                  <h3 className="font-black text-slate-900 text-lg mb-2 group-hover:text-orange-500 transition-colors">{f.title}</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">{f.desc}</p>
                 </div>
-              </div>
-            </form>
+              ))}
+            </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mt-4 text-xs font-medium text-slate-500">
-              <div className="flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5 text-teal-500" />
-                Được tin dùng bởi 50k+ người
+            {/* Install Steps */}
+            <div className="bg-white border border-slate-200 rounded-3xl p-8 md:p-12 shadow-sm animate-in fade-in duration-1000 delay-400">
+              <h2 className="text-2xl font-black text-slate-900 mb-8 text-center flex items-center justify-center gap-2">
+                <Chrome className="w-6 h-6 text-orange-500" />
+                Cài Đặt Trong 30 Giây
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[
+                  { step: "1", title: "Tải Extension", desc: 'Nhấn nút "Tải DealSniper miễn phí" và giải nén file ZIP vừa tải về.' },
+                  { step: "2", title: "Load vào Chrome", desc: 'Vào chrome://extensions → Bật Developer Mode → Chọn "Load unpacked" → chỉ đến thư mục vừa giải nén.' },
+                  { step: "3", title: "Dùng Ngay!", desc: 'Vào Shopee, tìm bất kỳ sản phẩm nào → Nhấn "SNIPE DEAL" → Extension tự làm hết!' },
+                ].map((s) => (
+                  <div key={s.step} className="flex gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-400 text-white font-black text-lg flex items-center justify-center shrink-0 shadow-md">
+                      {s.step}
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-900 mb-1">{s.title}</h4>
+                      <p className="text-slate-500 text-sm leading-relaxed">{s.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-300"></span>
-              <div className="flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5 text-teal-500" />
-                Lịch sử giá 30 ngày
-              </div>
-              <span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-300"></span>
-              <div className="flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5 text-teal-500" />
-                Đánh giá người bán thật
+              <div className="mt-8 text-center">
+                <a
+                  href="/DealSniper_v1.0.0.zip"
+                  download
+                  className="inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-400 hover:to-orange-300 text-white py-3 px-8 rounded-xl font-black text-sm transition-all shadow-lg hover:shadow-orange-200 active:scale-95"
+                >
+                  <Download className="w-4 h-4" />
+                  TẢI DEALSNIPER V1.0.0
+                </a>
               </div>
             </div>
           </div>
         </section>
 
-        {/* --- HOT DEALS SECTION --- */}
-        {!hasSearched && (
+        {/* --- HOT DEALS (hidden while search not ready) --- */}
+        {false && (
           <div className="w-full max-w-7xl mx-auto px-6 mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-black text-[#0f172a] flex items-center gap-2">
